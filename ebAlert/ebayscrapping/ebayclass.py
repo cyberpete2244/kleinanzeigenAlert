@@ -111,7 +111,7 @@ class EbayItemFactory:
         # currently price is not considered in getting the results, articles are filtered later
         url = settings.URL_BASE
         url += getattr(settings, "URL_TYPE_"+link_model.search_type).format(SEARCH_TERM=search_term, NPAGE=current_page)
-        print(url)
+        # print(url)
         return url
 
     @staticmethod
