@@ -168,21 +168,26 @@ def filter_message_items(link_model, message_items, telegram_message):
             print('l', end='')
             # calculate distance
         if type(link_model.zipcodes) != NoneType and worth_messaging and item.shipping == "No Shipping":
-            zipcodes = link_model.zipcodes.split(',')
-            max_distance = int(zipcodes[0])
+            # ZIPCODES in DB like this: dist1,zip11,zip12,..,zip1N-dist2,zip21..
             geocoder = Nominatim(user_agent="cyberpete2244/ebayKleinanzeigenAlert")
-            locationzip = re.findall(r'\d+', item.location)
-            geoloc_item = geocoder.geocode(locationzip)
-            n = 1
+            geoloc_item = geocoder.geocode(re.findall(r'\d+', item.location))
+            # cycle through areas and through zipcodes
+            areas = link_model.zipcodes.split('-')
             item_inrange = False
-            while n < len(zipcodes):
-                geoloc_filter = geocoder.geocode(zipcodes[n])
-                itemdistance = round(distance.distance((geoloc_item.latitude, geoloc_item.longitude),(geoloc_filter.latitude, geoloc_filter.longitude)).km)
-                if itemdistance <= max_distance:
-                    item_inrange = True
-                    n = len(zipcodes)
-                else:
-                    n += 1
+            t = 0
+            while t < len(areas):
+                zipcodes = areas[t].split(',')
+                max_distance = int(zipcodes[0])
+                n = 1
+                while n < len(zipcodes):
+                    geoloc_filter = geocoder.geocode(zipcodes[n])
+                    itemdistance = round(distance.distance((geoloc_item.latitude, geoloc_item.longitude),(geoloc_filter.latitude, geoloc_filter.longitude)).km)
+                    if itemdistance <= max_distance:
+                        item_inrange = True
+                        n = len(zipcodes)
+                        t = len(areas)
+                    else:
+                        n += 1
             if item_inrange:
                 print('+', end='')
             else:
@@ -192,11 +197,11 @@ def filter_message_items(link_model, message_items, telegram_message):
         if worth_messaging and telegram_message:
             telegram.send_formated_message(item)
     print('')
+
 """
 IDEAS:
 prepare vor search only having max price for example
 make searches go to individual chat ids
-make db much more detailed: product categories + filters prepare URLs and are referenced by serach_type
 
 MAYBE: react to a telegram message marks the item as favored in ebay and sends the seller a text?
 """
