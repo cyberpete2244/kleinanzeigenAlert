@@ -34,7 +34,7 @@ def start():
     loop through the urls in the database and send message
     """
     starttime = datetime.now()
-    print(">> Starting Ebay alert @", start.starttime("%H:%M:%S"))
+    print(">> Starting Ebay alert @", starttime.strftime("%H:%M:%S"))
     with get_session() as db:
         get_all_post(db=db, telegram_message=True)
     end = datetime.now()
