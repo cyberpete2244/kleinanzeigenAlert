@@ -62,7 +62,7 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
     searches = crud_link.get_all(db=db)
     if searches:
         for link_model in searches:
-            if exclusive_id is not False and exclusive_id == link_model.id:
+            if (exclusive_id is not False and exclusive_id == link_model.id) or exclusive_id is False:
                 if link_model.status != 0:
                     """
                     every search has a status
