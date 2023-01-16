@@ -28,89 +28,61 @@ def cli() -> BaseCommand:
     pass
 
 
-@cli.command(help="Fetch new post and send telegramclass notification.")
-def start():
+@cli.command(options_metavar="<options>", help="Fetch new posts and send notifications.")
+@click.option("-s", "--silent", is_flag=True, help="Do not send notifications.")
+@click.option("-n", "--nonperm", is_flag=True, help="Do not edit database.")
+@click.option("-e", "--exclusive", 'exclusive', metavar="<link id>", help="Run only one search.")
+def start(silent, nonperm, exclusive):
     """
-    loop through the urls in the database and send message
+    cli related to the main package. Fetch new posts and send notifications.
     """
+    # DEFAULTS HERE
+    write_database = True
+    telegram_message = True
     starttime = datetime.now()
     print(">> Starting Ebay alert @", starttime.strftime("%H:%M:%S"))
-    with get_session() as db:
-        get_all_post(db=db, telegram_message=True)
+    if silent:
+        print(">> No notifications.")
+        telegram_message = False
+    if nonperm:
+        print(">> No changes to database.")
+        write_database = False
+    if exclusive:
+        print(">> Checking only ID:", exclusive)
+        with get_session() as db:
+            get_all_post(db=db, exclusive_id=int(exclusive), write_database=write_database, telegram_message=telegram_message)
+    else:
+        with get_session() as db:
+            get_all_post(db=db, write_database=write_database, telegram_message=telegram_message)
     end = datetime.now()
     print("<< Ebay alert finished @", end.strftime("%H:%M:%S"), "Duration:", end-starttime)
 
 
-@cli.command(options_metavar="<options>", help="Add/Show/Remove URL from database.")
-@click.option("-r", "--remove_link", 'remove', metavar="<link id>", help="Remove link from database.")
-@click.option("-c", "--clear", is_flag=True, help="Clear post database.")
-@click.option("-a", "--add_url", 'url', metavar='<URL>', help="Add URL to database and fetch posts.")
-@click.option("-i", "--init", is_flag=True, help="Initialise database after clearing.")
-@click.option("-s", "--show", is_flag=True, help="Show all urls and corresponding id.")
-def links(show, remove, clear, url, init):
-    """
-    cli related to the links. Add, remove, clear, init and show
-    """
-    # TODO: Add verification if action worked.
-    with get_session() as db:
-        if show:
-            print(">> List of URL")
-            links = crud_link.get_all(db)
-            if links:
-                for link_model in links:
-                    print("{0:<{1}}{2}".format(link_model.id, 8 - len(str(link_model.id)), link_model.link))
-            print("<< List of URL")
-        elif remove:
-            print(">> Removing link")
-            if crud_link.remove(db=db, id=remove):
-                print("<< Link removed")
-            else:
-                print("<< No link found")
-        elif clear:
-            print(">> Clearing item database")
-            crud_post.clear_database(db=db)
-            print("<< Database cleared")
-        elif url:
-            print(">> Adding url")
-            if crud_link.get_by_key(key_mapping={"link": url}, db=db):
-                print("<< Link already exists")
-            else:
-                crud_link.create({"link": url}, db)
-                new_link_id = 0
-                ebay_items = ebayclass.EbayItemFactory(url)
-                # TODO here link ids for new_link_id missing ...
-                crud_post.add_items_to_db(db, ebay_items.item_list, new_link_id)
-                print("<< Link and post added to the database")
-        elif init:
-            print(">> Initializing database")
-            get_all_post(db)
-            print("<< Database initialized")
-
-
-def get_all_post(db: Session, telegram_message=False):
+def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_message=False):
     searches = crud_link.get_all(db=db)
     if searches:
         for link_model in searches:
-            if link_model.status != 0:
-                """
-                every search has a status
-                0 = search disabled
-                1 = search active. update db and send messages
-                2 = search silent = update db but do not send messages
-                """
-                # scrape search pages and add new/changed items to db
-                print(f'Searching ID:{link_model.id}: Type \'{link_model.search_type}\', filter \'{link_model.search_string}\', range: {link_model.price_low}€ - {link_model.price_high}€')
-                post_factory = ebayclass.EbayItemFactory(link_model)
-                message_items = crud_post.add_items_to_db(db=db, items=post_factory.item_list, link_id=link_model.id, simulate=False)
-                if link_model.status == 1:
-                    # check for items worth sending and send
-                    if len(message_items) > 0:
-                        filter_message_items(link_model, message_items, telegram_message=telegram_message)
+            if exclusive_id is not False and exclusive_id == link_model.id:
+                if link_model.status != 0:
+                    """
+                    every search has a status
+                    0 = search disabled
+                    1 = search active. update db and send messages
+                    2 = search silent = update db but do not send messages
+                    """
+                    # scrape search pages and add new/changed items to db
+                    print(f'>> Searching ID:{link_model.id}: Type \'{link_model.search_type}\', filter \'{link_model.search_string}\', range: {link_model.price_low}€ - {link_model.price_high}€')
+                    post_factory = ebayclass.EbayItemFactory(link_model)
+                    message_items = crud_post.add_items_to_db(db=db, items=post_factory.item_list, link_id=link_model.id, write_database=write_database)
+                    if link_model.status == 1:
+                        # check for items worth sending and send
+                        if len(message_items) > 0:
+                            filter_message_items(link_model, message_items, telegram_message=telegram_message)
+                        else:
+                            print('Nothing to report')
                     else:
-                        print('Nothing to report')
-                else:
-                    # end output
-                    print('Silent')
+                        # end output
+                        print('Silent search')
 
 
 def filter_message_items(link_model, message_items, telegram_message):
