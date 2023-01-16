@@ -101,7 +101,7 @@ def get_all_post(db: Session, telegram_message=False):
                 # scrape search pages and add new/changed items to db
                 print(f'Searching ID:{link_model.id}: Type \'{link_model.search_type}\', filter \'{link_model.search_string}\', range: {link_model.price_low}€ - {link_model.price_high}€')
                 post_factory = ebayclass.EbayItemFactory(link_model)
-                message_items = crud_post.add_items_to_db(db=db, items=post_factory.item_list, link_id=link_model.id, simulate=False)
+                message_items = crud_post.add_items_to_db(db=db, items=post_factory.item_list, link_id=link_model.id, simulate=True)
                 if link_model.status == 1:
                     # check for items worth sending and send
                     if len(message_items) > 0:
@@ -188,6 +188,7 @@ def filter_message_items(link_model, message_items, telegram_message):
                         t = len(areas)
                     else:
                         n += 1
+                t += 1
             if item_inrange:
                 print('+', end='')
             else:
