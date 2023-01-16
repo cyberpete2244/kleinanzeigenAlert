@@ -33,12 +33,12 @@ def start():
     """
     loop through the urls in the database and send message
     """
-    now = datetime.now()
-    current_time = now.strftime("%H:%M:%S")
-    print(">> Starting Ebay alert @", current_time)
+    starttime = datetime.now()
+    print(">> Starting Ebay alert @", start.starttime("%H:%M:%S"))
     with get_session() as db:
         get_all_post(db=db, telegram_message=True)
-    print("<< Ebay alert finished")
+    end = datetime.now()
+    print("<< Ebay alert finished @", end.strftime("%H:%M:%S"), "Duration:", end-starttime)
 
 
 @cli.command(options_metavar="<options>", help="Add/Show/Remove URL from database.")
