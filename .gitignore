@@ -1,4 +1,4 @@
-ebAlert/core/config.py
+ebAlert/core/settings.py
 .idea
 ebayAlert*
 notebook

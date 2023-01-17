@@ -9,6 +9,7 @@ from geopy.geocoders import Nominatim
 from geopy import distance
 
 from ebAlert import create_logger
+from ebAlert.core.configs import configs
 from ebAlert.crud.base import crud_link, get_session
 from ebAlert.crud.post import crud_post
 from ebAlert.ebayscrapping import ebayclass
@@ -86,9 +87,8 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
 
 
 def filter_message_items(link_model, message_items, telegram_message):
-    if type(link_model.zipcodes) != NoneType:
-        max_distance = int(link_model.zipcodes.split(',')[0])
-        print(f"Show only local offers within: {max_distance}km")
+    if type(link_model.zipcodes) != NoneType or configs.LOCATION_FILTER != "":
+        print("Show only local offers within specified areas")
     print('Telegram:', end=' ')
     for item in message_items:
         worth_messaging = False
@@ -138,13 +138,18 @@ def filter_message_items(link_model, message_items, telegram_message):
             item.pricehint = f"(-30%)"
             worth_messaging = True
             print('l', end='')
-            # calculate distance
-        if type(link_model.zipcodes) != NoneType and worth_messaging and item.shipping == "No Shipping":
+        # calculate distance
+        checkzipcodes = 0
+        if type(link_model.zipcodes) != NoneType:
+            checkzipcodes = 1
+        elif configs.LOCATION_FILTER != "":
+            checkzipcodes = 2
+        if checkzipcodes > 0 and worth_messaging and item.shipping == "No Shipping":
             # ZIPCODES in DB like this: dist1,zip11,zip12,..,zip1N-dist2,zip21..
             geocoder = Nominatim(user_agent="cyberpete2244/ebayKleinanzeigenAlert")
             geoloc_item = geocoder.geocode(re.findall(r'\d+', item.location))
             # cycle through areas and through zipcodes
-            areas = link_model.zipcodes.split('-')
+            areas = link_model.zipcodes.split('-') if checkzipcodes == 1 else configs.LOCATION_FILTER.split('-')
             item_inrange = False
             t = 0
             while t < len(areas):

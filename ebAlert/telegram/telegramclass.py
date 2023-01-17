@@ -1,8 +1,7 @@
-from pprint import pprint
-
 import requests
 
-from ebAlert.core.config import settings
+from ebAlert.core.configs import configs
+from ebAlert.core.settings import settings
 from ebAlert.ebayscrapping.ebayclass import EbayItem
 from urllib.parse import urlencode
 
@@ -24,7 +23,7 @@ class SendingClass:
             return response.json()["ok"]
 
     def send_formated_message(self, item: EbayItem):
-        message = f"{settings.SOURCE_INDICATOR}{item.title}\n\n{item.print_price}\n\n{item.shipping}\n({item.location})\n\n"
+        message = f"{configs.SOURCE_INDICATOR}{item.title}\n\n{item.print_price}\n\n{item.shipping}\n({item.location})\n\n"
         url = f'<a href="{item.link}">{item.link}</a>'
         self.send_message(message + url)
 

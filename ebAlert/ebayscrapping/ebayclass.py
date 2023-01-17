@@ -8,7 +8,8 @@ from random import randint
 from time import sleep
 
 from ebAlert import create_logger
-from ebAlert.core.config import settings
+from ebAlert.core.configs import configs
+from ebAlert.core.settings import settings
 
 log = create_logger(__name__)
 
@@ -82,7 +83,7 @@ class EbayItem:
 class EbayItemFactory:
     def __init__(self, link_model):
         self.item_list = []
-        npage_max = settings.MAX_PAGESTOSCRAPE
+        npage_max = configs.MAX_PAGESTOSCRAPE
         npage_found = 1
         npage = 1
         while 0 < npage <= npage_max:

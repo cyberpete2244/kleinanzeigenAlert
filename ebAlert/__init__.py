@@ -1,14 +1,14 @@
 import logging
-from ebAlert.core.config import settings
+from ebAlert.core.configs import configs
 
-logging.basicConfig(level=settings.LOGGING)
+logging.basicConfig(level=configs.LOGGING)
 
 
 def create_logger(name):
     logger = logging.getLogger(name)
     # Create handlers
     c_handler = logging.StreamHandler()
-    c_handler.setLevel(settings.LOGGING)
+    c_handler.setLevel(configs.LOGGING)
 
     # Create formatters and add it to handlers
     c_format = logging.Formatter('%(asctime)s - %(funcName)s in %(name)s - %(levelname)s - %(message)s')
