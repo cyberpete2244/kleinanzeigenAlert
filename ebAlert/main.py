@@ -41,7 +41,7 @@ def start(silent, nonperm, exclusive):
     write_database = True
     telegram_message = True
     starttime = datetime.now()
-    print("")
+    print("----------------------------------------------------------------------------------")
     print(">> Starting abAlert @", starttime.strftime("%H:%M:%S"))
     if silent:
         print(">> No notifications.")
@@ -93,10 +93,10 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                         if len(message_items) > 0:
                             filter_message_items(link_model, message_items, telegram_message=telegram_message)
                         else:
-                            print('Nothing to report.')
+                            print(' Nothing to report.')
                     else:
                         # end output
-                        print('(Silent search)')
+                        print(' (Silent search)')
 
 
 def filter_message_items(link_model, message_items, telegram_message):
