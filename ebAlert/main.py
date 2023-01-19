@@ -41,7 +41,8 @@ def start(silent, nonperm, exclusive):
     write_database = True
     telegram_message = True
     starttime = datetime.now()
-    print(">> Starting Ebay alert @", starttime.strftime("%H:%M:%S"))
+    print("")
+    print(">> Starting abAlert @", starttime.strftime("%H:%M:%S"))
     if silent:
         print(">> No notifications.")
         telegram_message = False
@@ -51,12 +52,13 @@ def start(silent, nonperm, exclusive):
     if exclusive:
         print(">> Checking only ID:", exclusive)
         with get_session() as db:
-            get_all_post(db=db, exclusive_id=int(exclusive), write_database=write_database, telegram_message=telegram_message)
+            get_all_post(db=db, exclusive_id=int(exclusive), write_database=write_database,
+                         telegram_message=telegram_message)
     else:
         with get_session() as db:
             get_all_post(db=db, write_database=write_database, telegram_message=telegram_message)
     end = datetime.now()
-    print("<< Ebay alert finished @", end.strftime("%H:%M:%S"), "Duration:", end-starttime)
+    print("<< ebAlert finished @", end.strftime("%H:%M:%S"), "Duration:", end - starttime)
 
 
 def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_message=False):
@@ -72,25 +74,35 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                     2 = search silent = update db but do not send messages
                     """
                     # scrape search pages and add new/changed items to db
-                    print(f'>> Searching ID:{link_model.id}: Type \'{link_model.search_type}\', filter \'{link_model.search_string}\', range: {link_model.price_low}€ - {link_model.price_high}€')
+                    locationfilterhint = ""
+                    while True:
+                        if type(link_model.zipcodes) != NoneType:
+                            # DB setting takes priority
+                            locationfilterhint = " (Area Filter from: DB)"
+                            break
+                        if configs.LOCATION_FILTER != "":
+                            locationfilterhint = " (Area Filter from: configs.py)"
+                            break
+                        break
+                    print(f'>> Searching ID:{link_model.id}: Type \'{link_model.search_type}\', filter \'{link_model.search_string}\', range: {link_model.price_low}€ - {link_model.price_high}€' + locationfilterhint)
                     post_factory = ebayclass.EbayItemFactory(link_model)
-                    message_items = crud_post.add_items_to_db(db=db, items=post_factory.item_list, link_id=link_model.id, write_database=write_database)
+                    message_items = crud_post.add_items_to_db(db=db, items=post_factory.item_list,
+                                                              link_id=link_model.id, write_database=write_database)
                     if link_model.status == 1:
                         # check for items worth sending and send
                         if len(message_items) > 0:
                             filter_message_items(link_model, message_items, telegram_message=telegram_message)
                         else:
-                            print('Nothing to report')
+                            print('Nothing to report.')
                     else:
                         # end output
-                        print('Silent search')
+                        print('(Silent search)')
 
 
 def filter_message_items(link_model, message_items, telegram_message):
-    if type(link_model.zipcodes) != NoneType or configs.LOCATION_FILTER != "":
-        print("Show only local offers within specified areas")
-    print('Telegram:', end=' ')
+    firstmessagesent = False
     for item in message_items:
+        evaluationlog = ""
         worth_messaging = False
         # current price as integer
         item_price = item.price
@@ -100,10 +112,10 @@ def filter_message_items(link_model, message_items, telegram_message):
         else:
             item_price_num = int(item_price_num[0])
         # pricerange visual indicator
-        pricerange= ""
+        pricerange = ""
         if int(link_model.price_low) <= item_price_num <= int(link_model.price_high):
             pricediff = int(link_model.price_high) - int(link_model.price_low)
-            pricepos = round((item_price_num - int(link_model.price_low))*10/pricediff)
+            pricepos = round((item_price_num - int(link_model.price_low)) * 10 / pricediff)
             for x in range(0, 11):
                 if x == pricepos:
                     pricerange += "X"
@@ -122,35 +134,41 @@ def filter_message_items(link_model, message_items, telegram_message):
         if item_price_num <= 1:
             # price is 0 or 1
             worth_messaging = True
-            print('V', end='')
+            evaluationlog += 'v'
         elif int(link_model.price_low) <= item_price_num <= int(link_model.price_high):
             # price within range
             worth_messaging = True
-            print('!', end='')
+            evaluationlog += 'X'
         elif int(link_model.price_high) < item_price_num <= price_max \
                 and "VB" in item_price:
             # price is negotiable and max 20% over watching price max 20€
             item.pricehint = f"(+20%)"
             worth_messaging = True
-            print('h', end='')
+            evaluationlog += 'h'
         elif int(link_model.price_low) * 0.7 <= item_price_num < int(link_model.price_low):
             # price is 30% below watch price
             item.pricehint = f"(-30%)"
             worth_messaging = True
-            print('l', end='')
-        # calculate distance
+            evaluationlog += 'l'
+        # calculate and check distances
         checkzipcodes = 0
-        if type(link_model.zipcodes) != NoneType:
-            checkzipcodes = 1
-        elif configs.LOCATION_FILTER != "":
-            checkzipcodes = 2
+        while True:
+            if type(link_model.zipcodes) != NoneType:
+                # DB setting takes priority
+                checkzipcodes = 1
+                break
+            if configs.LOCATION_FILTER != "":
+                checkzipcodes = 2
+                break
+            break
+        item_inrange = False
         if checkzipcodes > 0 and worth_messaging and item.shipping == "No Shipping":
+            evaluationlog += '?'
             # ZIPCODES in DB like this: dist1,zip11,zip12,..,zip1N-dist2,zip21..
             geocoder = Nominatim(user_agent="cyberpete2244/ebayKleinanzeigenAlert")
             geoloc_item = geocoder.geocode(re.findall(r'\d+', item.location))
             # cycle through areas and through zipcodes
             areas = link_model.zipcodes.split('-') if checkzipcodes == 1 else configs.LOCATION_FILTER.split('-')
-            item_inrange = False
             t = 0
             while t < len(areas):
                 zipcodes = areas[t].split(',')
@@ -158,7 +176,8 @@ def filter_message_items(link_model, message_items, telegram_message):
                 n = 1
                 while n < len(zipcodes):
                     geoloc_filter = geocoder.geocode(zipcodes[n])
-                    itemdistance = round(distance.distance((geoloc_item.latitude, geoloc_item.longitude),(geoloc_filter.latitude, geoloc_filter.longitude)).km)
+                    itemdistance = round(distance.distance((geoloc_item.latitude, geoloc_item.longitude),
+                                                           (geoloc_filter.latitude, geoloc_filter.longitude)).km)
                     if itemdistance <= max_distance:
                         item_inrange = True
                         n = len(zipcodes)
@@ -166,15 +185,26 @@ def filter_message_items(link_model, message_items, telegram_message):
                     else:
                         n += 1
                 t += 1
-            if item_inrange:
-                print('+', end='')
-            else:
-                worth_messaging = False
-                print('-', end='')
-        # send telegram
+
+        # send telegram message?
         if worth_messaging and telegram_message:
-            telegram.send_formated_message(item)
+            dosend = worth_messaging
+            if firstmessagesent is False:
+                print('  Messages:', end=' ')
+                firstmessagesent = True
+            if checkzipcodes > 0 and item_inrange is True and item.shipping == "No Shipping":
+                evaluationlog += '+'
+            elif checkzipcodes > 0 and item_inrange is False and item.shipping == "No Shipping":
+                evaluationlog += '-'
+                dosend = False
+            print(evaluationlog, end='')
+            if dosend:
+                telegram.send_formated_message(item)
+
+    if firstmessagesent is False:
+        print('  Nothing worth messaging.', end='')
     print('')
+
 
 """
 IDEAS:
@@ -183,7 +213,6 @@ make searches go to individual chat ids
 
 MAYBE: react to a telegram message marks the item as favored in ebay and sends the seller a text?
 """
-
 
 if __name__ == "__main__":
     cli(sys.argv[1:])
