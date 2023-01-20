@@ -12,6 +12,8 @@ class Settings:
                       "SEARCH_TERM}k0c173+handy_telekom.art_s:apple+handy_telekom.condition_s:condition_used"
     URL_TYPE_MONITOR = "/s-pc-zubehoer-software/monitore/anbieter:privat/anzeige:angebote/{NPAGE}{" \
                        "SEARCH_TERM}k0c225+pc_zubehoer_software.art_s:monitore"
+    URL_TYPE_MONITOR = "/s-pc-zubehoer-software/prozessor_cpu/anbieter:privat/anzeige:angebote/{NPAGE}{" \
+                       "SEARCH_TERM}k0c225+pc_zubehoer_software.art_s:prozessor_cpu"
 
 
 settings = Settings()
