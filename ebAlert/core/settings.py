@@ -14,6 +14,8 @@ class Settings:
                        "SEARCH_TERM}k0c225+pc_zubehoer_software.art_s:monitore"
     URL_TYPE_CPU = "/s-pc-zubehoer-software/prozessor_cpu/anbieter:privat/anzeige:angebote/{NPAGE}{" \
                        "SEARCH_TERM}k0c225+pc_zubehoer_software.art_s:prozessor_cpu"
+    URL_TYPE_MEMORY = "/s-pc-zubehoer-software/speicher/anbieter:privat/anzeige:angebote/{NPAGE}{" \
+                       "SEARCH_TERM}k0c225+pc_zubehoer_software.art_s:speicher"
 
 
 settings = Settings()
