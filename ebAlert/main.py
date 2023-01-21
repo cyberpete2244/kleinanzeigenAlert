@@ -33,13 +33,15 @@ def cli() -> BaseCommand:
 @click.option("-s", "--silent", is_flag=True, help="Do not send notifications.")
 @click.option("-n", "--nonperm", is_flag=True, help="Do not edit database.")
 @click.option("-e", "--exclusive", 'exclusive', metavar="<link id>", help="Run only one search.")
-def start(silent, nonperm, exclusive):
+@click.option("-d", "--depth", 'depth', metavar="<pages n>", help="When pagination available, scan n pages (default 1).")
+def start(silent, nonperm, exclusive, depth):
     """
     cli related to the main package. Fetch new posts and send notifications.
     """
     # DEFAULTS HERE
     write_database = True
     telegram_message = True
+    num_pages = 1
     starttime = datetime.now()
     print("----------------------------------------------------------------------------------")
     print(">> Starting abAlert @", starttime.strftime("%H:%M:%S"))
@@ -49,19 +51,22 @@ def start(silent, nonperm, exclusive):
     if nonperm:
         print(">> No changes to database.")
         write_database = False
+    if depth:
+        num_pages = depth
+    # TODO really this split with double call?
     if exclusive:
         print(">> Checking only ID:", exclusive)
         with get_session() as db:
             get_all_post(db=db, exclusive_id=int(exclusive), write_database=write_database,
-                         telegram_message=telegram_message)
+                         telegram_message=telegram_message, num_pages=num_pages)
     else:
         with get_session() as db:
-            get_all_post(db=db, write_database=write_database, telegram_message=telegram_message)
+            get_all_post(db=db, write_database=write_database, telegram_message=telegram_message, num_pages=num_pages)
     end = datetime.now()
     print("<< ebAlert finished @", end.strftime("%H:%M:%S"), "Duration:", end - starttime)
 
 
-def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_message=False):
+def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_message=False, num_pages=1):
     searches = crud_link.get_all(db=db)
     if searches:
         for link_model in searches:
@@ -85,7 +90,7 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                             break
                         break
                     print(f'>> Searching ID:{link_model.id}: Type \'{link_model.search_type}\', filter \'{link_model.search_string}\', range: {link_model.price_low}€ - {link_model.price_high}€' + locationfilterhint)
-                    post_factory = ebayclass.EbayItemFactory(link_model)
+                    post_factory = ebayclass.EbayItemFactory(link_model, num_pages)
                     message_items = crud_post.add_items_to_db(db=db, items=post_factory.item_list,
                                                               link_id=link_model.id, write_database=write_database)
                     if link_model.status == 1:

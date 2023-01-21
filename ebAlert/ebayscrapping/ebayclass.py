@@ -81,10 +81,8 @@ class EbayItem:
 
 
 class EbayItemFactory:
-    def __init__(self, link_model):
+    def __init__(self, link_model, npage_max):
         self.item_list = []
-        npage_max = configs.MAX_PAGESTOSCRAPE
-        npage_found = 1
         npage = 1
         while 0 < npage <= npage_max:
             web_page_soup = self.get_webpage(self.generate_url(link_model, npage))
@@ -94,7 +92,7 @@ class EbayItemFactory:
                 npage_found = len(web_page_soup.find(attrs={"class": "pagination-pages"}).find_all())
                 if npage < npage_found and npage <= npage_max:
                     npage += 1
-                    sleep(randint(0, 30) / 10)
+                    sleep(randint(0, 20) / 10)
                 else:
                     npage = 0
             else:
