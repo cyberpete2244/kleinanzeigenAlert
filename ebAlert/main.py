@@ -33,7 +33,7 @@ def cli() -> BaseCommand:
 @click.option("-s", "--silent", is_flag=True, help="Do not send notifications.")
 @click.option("-n", "--nonperm", is_flag=True, help="Do not edit database.")
 @click.option("-e", "--exclusive", 'exclusive', metavar="<link id>", help="Run only one search.")
-@click.option("-d", "--depth", 'depth', metavar="<pages n>", help="When pagination available, scan n pages (default 1).")
+@click.option("-d", "--depth", 'depth', metavar="<pages n>", help="When available, scan n pages (default 1).")
 def start(silent, nonperm, exclusive, depth):
     """
     cli related to the main package. Fetch new posts and send notifications.
@@ -42,6 +42,8 @@ def start(silent, nonperm, exclusive, depth):
     write_database = True
     telegram_message = True
     num_pages = 1
+    exclusive_id = False
+
     starttime = datetime.now()
     print("----------------------------------------------------------------------------------")
     print(">> Starting abAlert @", starttime.strftime("%H:%M:%S"))
@@ -52,16 +54,14 @@ def start(silent, nonperm, exclusive, depth):
         print(">> No changes to database.")
         write_database = False
     if depth:
-        num_pages = depth
-    # TODO really this split with double call?
+        print(f">> Checking up to {depth} pages per search.")
+        num_pages = int(depth)
     if exclusive:
         print(">> Checking only ID:", exclusive)
-        with get_session() as db:
-            get_all_post(db=db, exclusive_id=int(exclusive), write_database=write_database,
-                         telegram_message=telegram_message, num_pages=num_pages)
-    else:
-        with get_session() as db:
-            get_all_post(db=db, write_database=write_database, telegram_message=telegram_message, num_pages=num_pages)
+        exclusive_id = int(exclusive)
+    with get_session() as db:
+        get_all_post(db=db, exclusive_id=exclusive_id, write_database=write_database,
+                     telegram_message=telegram_message, num_pages=num_pages)
     end = datetime.now()
     print("<< ebAlert finished @", end.strftime("%H:%M:%S"), "Duration:", end - starttime)
 
