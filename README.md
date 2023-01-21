@@ -31,7 +31,7 @@ No API required - Only URL of the query.
    ```
 8. Run the `ebAlert` CLI
    ```sh
-   python -m ebAlert
+   python -m ebayAlert
    ```
 
 ## Usage & Example
