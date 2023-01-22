@@ -1,8 +1,8 @@
 import requests
 
-from ebAlert.core.configs import configs
-from ebAlert.core.settings import settings
-from ebAlert.ebayscrapping.ebayclass import EbayItem
+from ebayAlert.core.configs import configs
+from ebayAlert.core.settings import settings
+from ebayAlert.ebayscrapping.ebayclass import EbayItem
 from urllib.parse import urlencode
 
 
