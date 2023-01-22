@@ -1,4 +1,4 @@
-from ebAlert.core.configs import configs
+from ebayAlert.core.configs import configs
 
 
 class Settings:

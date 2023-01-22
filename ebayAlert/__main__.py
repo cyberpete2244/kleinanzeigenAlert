@@ -1,4 +1,4 @@
-from ebAlert import main
+from ebayAlert import main
 import sys
 
 if __name__ == "__main__":

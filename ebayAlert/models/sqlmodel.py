@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func
 
-from ebAlert import create_logger
-from ebAlert.db.db import Base, engine
+from ebayAlert import create_logger
+from ebayAlert.db.db import Base, engine
 
 log = create_logger(__name__)
 

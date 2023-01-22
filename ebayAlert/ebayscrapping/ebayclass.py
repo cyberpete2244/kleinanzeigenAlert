@@ -7,9 +7,9 @@ from bs4.element import Tag
 from random import randint
 from time import sleep
 
-from ebAlert import create_logger
-from ebAlert.core.configs import configs
-from ebAlert.core.settings import settings
+from ebayAlert import create_logger
+from ebayAlert.core.configs import configs
+from ebayAlert.core.settings import settings
 
 log = create_logger(__name__)
 

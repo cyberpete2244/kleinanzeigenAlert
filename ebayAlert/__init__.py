@@ -1,5 +1,5 @@
 import logging
-from ebAlert.core.configs import configs
+from ebayAlert.core.configs import configs
 
 logging.basicConfig(level=configs.LOGGING)
 

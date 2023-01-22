@@ -5,9 +5,9 @@ from typing import Dict, Any, List, TypeVar, Optional
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
-from ebAlert import create_logger
-from ebAlert.db.db import Session as Session_DB
-from ebAlert.models.sqlmodel import EbayLink, Base
+from ebayAlert import create_logger
+from ebayAlert.db.db import Session as Session_DB
+from ebayAlert.models.sqlmodel import EbayLink, Base
 
 log = create_logger(__name__)
 

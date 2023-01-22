@@ -3,9 +3,9 @@ from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy.util import NoneType
 
-from ebAlert.crud.base import CRUBBase
-from ebAlert.ebayscrapping.ebayclass import EbayItem
-from ebAlert.models.sqlmodel import EbayPost
+from ebayAlert.crud.base import CRUBBase
+from ebayAlert.ebayscrapping.ebayclass import EbayItem
+from ebayAlert.models.sqlmodel import EbayPost
 
 
 class CRUDPost(CRUBBase):

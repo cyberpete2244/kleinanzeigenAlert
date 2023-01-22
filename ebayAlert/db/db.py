@@ -2,8 +2,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from ebAlert import create_logger
-from ebAlert.core.configs import configs
+from ebayAlert import create_logger
+from ebayAlert.core.configs import configs
 
 
 log = create_logger(__name__)

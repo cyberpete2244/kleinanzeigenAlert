@@ -13,5 +13,5 @@ setup(
         'requests>=2.28.1',
         'setuptools>=65.5.1'
     ],
-    entry_points={'console_scripts': 'ebAlert=ebAlert.main:cli'}
+    entry_points={'console_scripts': 'ebayAlert=ebayAlert.main:cli'}
 )

@@ -8,12 +8,12 @@ from sqlalchemy.util import NoneType
 from geopy.geocoders import Nominatim
 from geopy import distance
 
-from ebAlert import create_logger
-from ebAlert.core.configs import configs
-from ebAlert.crud.base import crud_link, get_session
-from ebAlert.crud.post import crud_post
-from ebAlert.ebayscrapping import ebayclass
-from ebAlert.telegram.telegramclass import telegram
+from ebayAlert import create_logger
+from ebayAlert.core.configs import configs
+from ebayAlert.crud.base import crud_link, get_session
+from ebayAlert.crud.post import crud_post
+from ebayAlert.ebayscrapping import ebayclass
+from ebayAlert.telegram.telegramclass import telegram
 
 log = create_logger(__name__)
 
