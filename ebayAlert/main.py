@@ -140,11 +140,11 @@ def filter_message_items(link_model, message_items, telegram_message):
                 item.pricehint = "[DEAL!]"
                 worth_messaging = True
                 evaluationlog += 'X'
-            elif price_target - 20 <= item_price_num <= price_target:
+            elif price_target - 20 < item_price_num <= price_target - 10:
                 item.pricehint = "[Maybe]"
                 worth_messaging = True
                 evaluationlog += 'C'
-            elif price_target < item_price_num <= price_target + 10 and "VB" in item_price:
+            elif price_target - 10 < item_price_num <= price_target and "VB" in item_price:
                 item.pricehint = "[Barter]"
                 worth_messaging = True
                 evaluationlog += 'b'
@@ -152,7 +152,7 @@ def filter_message_items(link_model, message_items, telegram_message):
             if type(link_model.price_info) != NoneType:
                 infos = link_model.price_info.split('-')
                 for info in infos:
-                    item.pricerange = f"\n{info}"
+                    item.pricerange += f"\n{info}"
 
         else:
             # Mode: PRICERANGE
