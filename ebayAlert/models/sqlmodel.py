@@ -27,6 +27,8 @@ class EbayLink(Base):
     search_string = Column(String)
     price_low = Column(Integer)
     price_high = Column(Integer)
+    price_target = Column(Integer)
+    price_info = Column(String)
     zipcodes = Column(String)
 
 

@@ -46,7 +46,7 @@ def start(silent, nonperm, exclusive, depth):
 
     starttime = datetime.now()
     print("----------------------------------------------------------------------------------")
-    print(">> Starting abAlert @", starttime.strftime("%H:%M:%S"))
+    print(">> Starting ebayAlert @", starttime.strftime("%H:%M:%S"))
     if silent:
         print(">> No notifications.")
         telegram_message = False
@@ -63,7 +63,7 @@ def start(silent, nonperm, exclusive, depth):
         get_all_post(db=db, exclusive_id=exclusive_id, write_database=write_database,
                      telegram_message=telegram_message, num_pages=num_pages)
     end = datetime.now()
-    print("<< ebAlert finished @", end.strftime("%H:%M:%S"), "Duration:", end - starttime)
+    print("<< ebayAlert finished @", end.strftime("%H:%M:%S"), "Duration:", end - starttime)
 
 
 def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_message=False, num_pages=1):
@@ -83,13 +83,18 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                     while True:
                         if type(link_model.zipcodes) != NoneType:
                             # DB setting takes priority
-                            locationfilterhint = " (Area Filter from: DB)"
+                            locationfilterhint = " (Area from: DB)"
                             break
                         if configs.LOCATION_FILTER != "":
-                            locationfilterhint = " (Area Filter from: configs.py)"
+                            locationfilterhint = " (Area from: configs.py)"
                             break
                         break
-                    print(f'>> Searching ID:{link_model.id}: Type \'{link_model.search_type}\', filter \'{link_model.search_string}\', range: {link_model.price_low}€ - {link_model.price_high}€' + locationfilterhint)
+                    mode = ""
+                    if type(link_model.price_target) != NoneType:
+                        mode = f'\'TARGET 0\' = {link_model.price_target}€'
+                    else:
+                        mode = f'RANGE {link_model.price_low}€ - {link_model.price_high}€'
+                    print(f'>> Searching ID:{link_model.id}: type \'{link_model.search_type}\', filter \'{link_model.search_string}\', mode: {mode}' + locationfilterhint)
                     post_factory = ebayclass.EbayItemFactory(link_model, num_pages)
                     message_items = crud_post.add_items_to_db(db=db, items=post_factory.item_list,
                                                               link_id=link_model.id, write_database=write_database)
@@ -116,45 +121,79 @@ def filter_message_items(link_model, message_items, telegram_message):
             item_price_num = 0
         else:
             item_price_num = int(item_price_num[0])
+
         # pricerange visual indicator
         pricerange = ""
-        if int(link_model.price_low) <= item_price_num <= int(link_model.price_high):
-            pricediff = int(link_model.price_high) - int(link_model.price_low)
-            pricepos = round((item_price_num - int(link_model.price_low)) * 10 / pricediff)
-            for x in range(0, 11):
-                if x == pricepos:
-                    pricerange += "X"
-                else:
-                    pricerange += "."
+
+        # check if message worth sending in two different modes
+        if type(link_model.price_target) != NoneType:
+            # Mode: TARGET (= reach break even price, 0€ loss/benefit)
+
+            price_target = int(link_model.price_target)
+            price_low = round(price_target * 0.7)
+            if item_price_num <= 1:
+                # price is 0 or 1
+                item.pricehint = "[Offer]"
+                worth_messaging = True
+                evaluationlog += 'v'
+            elif price_low <= item_price_num <= price_target - 20:
+                item.pricehint = "[DEAL!]"
+                worth_messaging = True
+                evaluationlog += 'X'
+            elif price_target - 20 <= item_price_num <= price_target:
+                item.pricehint = "[Maybe]"
+                worth_messaging = True
+                evaluationlog += 'C'
+            elif price_target < item_price_num <= price_target + 10 and "VB" in item_price:
+                item.pricehint = "[Barter]"
+                worth_messaging = True
+                evaluationlog += 'b'
+            item.pricerange = f"Target 0: {link_model.price_target}€"
+            if type(link_model.price_info) != NoneType:
+                infos = link_model.price_info.split('-')
+                for info in infos:
+                    item.pricerange = f"\n{info}"
+
         else:
-            pricerange = "......."
-        pricerange = " [" + pricerange + "] "
-        item.pricerange = f"{link_model.price_low}€{pricerange}{link_model.price_high}€"
-        # TODO hardcoded flag here and both over and underrange hints
-        # maximal item price to be shown
-        price_max = round(int(link_model.price_high) * 1.2)
-        if (price_max - link_model.price_high) > 20:
-            price_max = link_model.price_high + 20
-        # CHECK if message worth sending
-        if item_price_num <= 1:
-            # price is 0 or 1
-            worth_messaging = True
-            evaluationlog += 'v'
-        elif int(link_model.price_low) <= item_price_num <= int(link_model.price_high):
-            # price within range
-            worth_messaging = True
-            evaluationlog += 'X'
-        elif int(link_model.price_high) < item_price_num <= price_max \
-                and "VB" in item_price:
-            # price is negotiable and max 20% over watching price max 20€
-            item.pricehint = f"(+20%)"
-            worth_messaging = True
-            evaluationlog += 'h'
-        elif int(link_model.price_low) * 0.7 <= item_price_num < int(link_model.price_low):
-            # price is 30% below watch price
-            item.pricehint = f"(-30%)"
-            worth_messaging = True
-            evaluationlog += 'l'
+            # Mode: PRICERANGE
+
+            # maximal item price to be shown
+            price_max = round(int(link_model.price_high) * 1.2)
+            if (price_max - link_model.price_high) > 20:
+                price_max = link_model.price_high + 20
+
+            if int(link_model.price_low) <= item_price_num <= int(link_model.price_high):
+                pricediff = int(link_model.price_high) - int(link_model.price_low)
+                pricepos = round((item_price_num - int(link_model.price_low)) * 10 / pricediff)
+                for x in range(0, 11):
+                    if x == pricepos:
+                        pricerange += "X"
+                    else:
+                        pricerange += "."
+            else:
+                pricerange = "......."
+            if item_price_num <= 1:
+                # price is 0 or 1
+                worth_messaging = True
+                evaluationlog += 'v'
+            elif int(link_model.price_low) <= item_price_num <= int(link_model.price_high):
+                # price within range
+                worth_messaging = True
+                evaluationlog += 'X'
+            elif int(link_model.price_high) < item_price_num <= price_max \
+                    and "VB" in item_price:
+                # price is negotiable and max 20% over watching price max 20€
+                item.pricehint = f"(+20%)"
+                worth_messaging = True
+                evaluationlog += 'h'
+            elif int(link_model.price_low) * 0.7 <= item_price_num < int(link_model.price_low):
+                # price is 30% below watch price
+                item.pricehint = f"(-30%)"
+                worth_messaging = True
+                evaluationlog += 'l'
+            pricerange = " [" + pricerange + "] "
+            item.pricerange = f"{link_model.price_low}€{pricerange}{link_model.price_high}€"
+
         # calculate and check distances
         checkzipcodes = 0
         while True:
@@ -210,14 +249,6 @@ def filter_message_items(link_model, message_items, telegram_message):
         print('  Nothing worth messaging.', end='')
     print('')
 
-
-"""
-IDEAS:
-prepare vor search only having max price for example
-make searches go to individual chat ids
-
-MAYBE: react to a telegram message marks the item as favored in ebay and sends the seller a text?
-"""
 
 if __name__ == "__main__":
     cli(sys.argv[1:])

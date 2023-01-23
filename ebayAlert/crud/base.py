@@ -1,8 +1,7 @@
 from contextlib import contextmanager
-from pprint import pprint
 from typing import Dict, Any, List, TypeVar, Optional
 
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, case
 from sqlalchemy.orm import Session
 
 from ebayAlert import create_logger
@@ -32,7 +31,9 @@ class CRUBBase:
         self.model = model
 
     def get_all(self, db: Session) -> Optional[List[Model]]:
-        results = db.execute(select(self.model).order_by(self.model.price_low.desc())).scalars().all()
+        results = db.execute(select(self.model).order_by(
+            self.model.price_low.desc(), self.model.price_target.desc()
+                                                         )).scalars().all()
         return results
 
     def get_by_key(self, key_mapping: Dict[str, str], db: Session) -> Optional[Model]:

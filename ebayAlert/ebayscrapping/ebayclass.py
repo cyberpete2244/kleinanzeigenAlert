@@ -8,7 +8,6 @@ from random import randint
 from time import sleep
 
 from ebayAlert import create_logger
-from ebayAlert.core.configs import configs
 from ebayAlert.core.settings import settings
 
 log = create_logger(__name__)
@@ -21,7 +20,6 @@ class EbayItem:
         self.old_price = ""
         self.pricehint = ""
         self.pricerange = ""
-        self.distance = ""
 
     @property
     def link(self) -> str:
@@ -32,10 +30,7 @@ class EbayItem:
 
     @property
     def shipping(self) -> str:
-        if self.distance == "":
-            return self._find_text_in_class("aditem-main--middle--price-shipping--shipping") or "No Shipping"
-        else:
-            return self.distance
+        return self._find_text_in_class("aditem-main--middle--price-shipping--shipping") or "No Shipping"
 
     @property
     def title(self) -> str:
