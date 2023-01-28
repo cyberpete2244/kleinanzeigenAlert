@@ -128,27 +128,27 @@ def filter_message_items(link_model, message_items, telegram_message):
         # check if message worth sending in two different modes
         if type(link_model.price_target) != NoneType:
             # Mode: TARGET (= reach break even price, 0€ loss/benefit)
-
+            price_benefit = round(price_target - price_target*0.03 - 15)
             price_target = int(link_model.price_target)
             price_low = round(price_target * 0.7)
             if item_price_num <= 1:
                 # price is 0 or 1
                 item.pricehint = "[Offer]"
-                worth_messaging = True
+                worth_messaging = False  # LESS MESSAGES
                 evaluationlog += 'v'
-            elif price_low <= item_price_num <= price_target - 20:
-                item.pricehint = "[DEAL!]"
+            elif price_low <= item_price_num <= price_benefit:
+                item.pricehint = f'[DEAL!] (+{price_target-item_price_num}€)'
                 worth_messaging = True
                 evaluationlog += 'X'
-            elif price_target - 20 < item_price_num <= price_target - 10:
-                item.pricehint = "[Maybe]"
-                worth_messaging = True
-                evaluationlog += 'C'
-            elif price_target - 10 < item_price_num <= price_target and "VB" in item_price:
+            elif price_benefit < item_price_num <= price_target and "VB" in item_price:
                 item.pricehint = "[Barter]"
                 worth_messaging = True
                 evaluationlog += 'b'
-            item.pricerange = f"Target 0: {link_model.price_target}€"
+            elif price_target < item_price_num <= price_target + 10 and "VB" in item_price:
+                item.pricehint = "[Nah]"
+                worth_messaging = False  # LESS MESSAGES
+                evaluationlog += 'n'
+            item.pricerange = f"Target 0: {link_model.price_target}€\nBenefit: {price_benefit}€"
             if type(link_model.price_info) != NoneType:
                 infos = link_model.price_info.split('-')
                 for info in infos:
@@ -156,7 +156,6 @@ def filter_message_items(link_model, message_items, telegram_message):
 
         else:
             # Mode: PRICERANGE
-
             # maximal item price to be shown
             price_max = round(int(link_model.price_high) * 1.2)
             if (price_max - link_model.price_high) > 20:
