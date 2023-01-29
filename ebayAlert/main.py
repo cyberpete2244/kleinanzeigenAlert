@@ -128,8 +128,8 @@ def filter_message_items(link_model, message_items, telegram_message):
         # check if message worth sending in two different modes
         if type(link_model.price_target) != NoneType:
             # Mode: TARGET (= reach break even price, 0€ loss/benefit)
-            price_benefit = round(price_target - price_target*0.03 - 15)
             price_target = int(link_model.price_target)
+            price_benefit = round(price_target - price_target * 0.03 - 15)
             price_low = round(price_target * 0.7)
             if item_price_num <= 1:
                 # price is 0 or 1
@@ -235,12 +235,15 @@ def filter_message_items(link_model, message_items, telegram_message):
             if firstmessagesent is False:
                 print('  Messages:', end=' ')
                 firstmessagesent = True
+
             if checkzipcodes > 0 and item_inrange is True and item.shipping == "No Shipping":
                 evaluationlog += '+'
             elif checkzipcodes > 0 and item_inrange is False and item.shipping == "No Shipping":
                 evaluationlog += '-'
                 dosend = False
+
             print(evaluationlog, end='')
+
             if dosend:
                 telegram.send_formated_message(item)
 
