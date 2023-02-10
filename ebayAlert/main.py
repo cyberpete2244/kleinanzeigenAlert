@@ -157,8 +157,8 @@ def filter_message_items(link_model, message_items, telegram_message):
                     benefit = round(target - target * 0.03 - 15)
                     item.pricerange += f"T0 {pair[0]}: {target}€ WIN: {benefit}€ ({target-item_price_num}€)\n"
             else:
-                item.pricehint += f" ({price_target - item_price_num}€)"
-                item.pricerange = f"T0: {price_target}€\nWIN: {price_benefit}€\n"
+                item.pricehint += f""
+                item.pricerange = f"T0: {price_target}€\nWIN: {price_benefit}€ ({price_target - item_price_num}€)\n"
 
         else:
             # Mode: PRICERANGE
