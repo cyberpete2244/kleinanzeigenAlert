@@ -134,35 +134,35 @@ def filter_message_items(link_model, message_items, telegram_message):
             # Mode: TARGET (= reach break even price, 0€ loss/benefit)
             price_target = int(link_model.price_target)
             price_benefit = calc_benefit(price_target)
-            price_low = round(price_target * 0.7)
             if item_price_num <= 1:
                 # price is 0 or 1
                 item.pricehint = "[Offer]"
                 worth_messaging = False  # LESS MESSAGES
                 evaluationlog += 'o'
-            elif price_low <= item_price_num <= price_benefit:
-                item.pricehint = f'[DEAL!]'
+            elif item_price_num <= price_benefit and "defekt" not in item.title:
+                item.pricehint = f'[DEAL]'
                 worth_messaging = True
                 evaluationlog += 'X'
             elif price_benefit < item_price_num <= price_target and "VB" in item_price:
-                item.pricehint = "[Barter?]"
+                item.pricehint = "[Maybe]"
                 worth_messaging = True
                 evaluationlog += 'b'
             elif price_target < item_price_num <= price_target + 10 and "VB" in item_price:
                 item.pricehint = "[Nah]"
                 worth_messaging = False  # LESS MESSAGES
                 evaluationlog += 'n'
-            item.pricerange = ""
+            item.pricehint += f"\n[{link_model.search_string}]"
+
             if type(link_model.price_info) != NoneType:
                 infos = link_model.price_info.split('-')
                 for info in infos:
                     pair = info.split(':')
                     target = int(pair[1])
                     benefit = calc_benefit(target)
-                    item.pricerange += f"T0 {pair[0]}: {target}€ WIN: {benefit}€ ({benefit - item_price_num}€)\n"
+                    pricerange += f"T0 {pair[0]}: {target}€ WIN: {benefit}€ ({benefit - item_price_num}€)\n"
             else:
-                item.pricehint += f""
-                item.pricerange = f"T0: {price_target}€\nWIN: {price_benefit}€ ({price_benefit - item_price_num}€)\n"
+                pricerange = f"T0: {price_target}€\nWIN: {price_benefit}€ ({price_benefit - item_price_num}€)\n"
+            item.pricerange = pricerange
 
         else:
             # Mode: PRICERANGE
