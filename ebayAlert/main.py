@@ -159,9 +159,9 @@ def filter_message_items(link_model, message_items, telegram_message):
                     pair = info.split(':')
                     target = int(pair[1])
                     benefit = calc_benefit(target)
-                    pricerange += f"T0 {pair[0]}: {target}€ WIN: {benefit}€ ({benefit - item_price_num}€)\n"
+                    pricerange += f"T0 {pair[0]}: {target}€ ({target - item_price_num}€) WIN: {benefit}€ ({benefit - item_price_num}€)\n"
             else:
-                pricerange = f"T0: {price_target}€\nWIN: {price_benefit}€ ({price_benefit - item_price_num}€)\n"
+                pricerange = f"T0: {price_target}€ ({price_target - item_price_num}€)\nWIN: {price_benefit}€ ({price_benefit - item_price_num}€)\n"
             item.pricerange = pricerange
 
         else:
