@@ -145,7 +145,7 @@ def filter_message_items(link_model, message_items, telegram_message):
                 evaluationlog += 'X'
             elif price_benefit < item_price_num <= price_target and "VB" in item_price:
                 item.pricehint = "[Maybe]"
-                worth_messaging = True
+                worth_messaging = False  # LESS MESSAGES
                 evaluationlog += 'b'
             elif price_target < item_price_num <= price_target + 10 and "VB" in item_price:
                 item.pricehint = "[Nah]"
