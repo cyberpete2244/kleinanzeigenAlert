@@ -132,6 +132,7 @@ def filter_message_items(link_model, message_items, telegram_message):
         # check if message worth sending in two different modes
         if type(link_model.price_target) != NoneType:
             # Mode: TARGET (= reach break even price, 0€ loss/benefit)
+            price_low = int(link_model.price_target) * 0.7
             price_target = int(link_model.price_target)
             price_benefit = calc_benefit(price_target)
             if item_price_num <= 1:
@@ -139,7 +140,7 @@ def filter_message_items(link_model, message_items, telegram_message):
                 item.pricehint = "[Offer]"
                 worth_messaging = False  # LESS MESSAGES
                 evaluationlog += 'o'
-            elif item_price_num <= price_benefit and "defekt" not in item.title:
+            elif price_low <= item_price_num <= price_benefit and "defekt" not in item.title:
                 item.pricehint = f'[DEAL]'
                 worth_messaging = True
                 evaluationlog += 'X'
