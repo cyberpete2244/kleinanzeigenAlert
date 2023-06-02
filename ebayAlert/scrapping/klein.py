@@ -9,11 +9,12 @@ from time import sleep
 
 from ebayAlert import create_logger
 from ebayAlert.core.settings import settings
+from ebayAlert.scrapping.scrapeops import header_list, get_random_header
 
 log = create_logger(__name__)
 
 
-class EbayItem:
+class KleinItem:
     """Class ebay item"""
     def __init__(self, contents: Tag):
         self.contents = contents
@@ -67,7 +68,7 @@ class EbayItem:
         return self._find_text_in_class("aditem-main--top--left") or "No location"
 
     def __repr__(self):
-        return '{}; {}; {}'.format(self.title, self.city, self.price)
+        return '{}; {}'.format(self.title, self.price)
 
     def _find_text_in_class(self, class_name: str):
         found = self.contents.find(attrs={"class": f"{class_name}"})
@@ -75,7 +76,7 @@ class EbayItem:
             return found.text.strip()
 
 
-class EbayItemFactory:
+class KleinItemFactory:
     def __init__(self, link_model, npage_max):
         self.item_list = []
         npage = 1
@@ -83,7 +84,7 @@ class EbayItemFactory:
             web_page_soup = self.get_webpage(self.generate_url(link_model, npage))
             if web_page_soup:
                 articles = self.extract_item_from_page(web_page_soup)
-                self.item_list += [EbayItem(article) for article in articles]
+                self.item_list += [KleinItem(article) for article in articles]
                 npage_found = len(web_page_soup.find(attrs={"class": "pagination-pages"}).find_all())
                 if npage < npage_found and npage <= npage_max:
                     npage += 1
@@ -101,7 +102,10 @@ class EbayItemFactory:
             current_page = "seite:" + str(npage) + "/"
         search_term = ""
         if link_model.search_string != "":
-            search_term = link_model.search_string.replace(" ", "-") + "/"
+            # in DB search sting can contain "exclusions" with "-xyz". These con not be part of URL. Exclusions need to be done when analysing results
+            search_term_parts = link_model.search_string.split(" ")
+            search_term_parts[:] = [x for x in search_term_parts if not x.startswith("-")]
+            search_term = "-".join(str(y) for y in search_term_parts) + "/"
         # currently price is not considered in getting the results, articles are filtered later
         url = settings.URL_BASE
         url += getattr(settings, "URL_TYPE_"+link_model.search_type).format(SEARCH_TERM=search_term, NPAGE=current_page)
@@ -110,16 +114,13 @@ class EbayItemFactory:
 
     @staticmethod
     def get_webpage(url: str) -> BeautifulSoup:
-        custom_header = {
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/77.0"
-        }
-        response = requests.get(url, headers=custom_header)
+        response = requests.get(url, headers=get_random_header(header_list))
         if response and response.status_code == 200:
             cleaned_response = response.text.replace("&#8203", "")
             soup = BeautifulSoup(cleaned_response, "html.parser")
             return soup
         else:
-            print(f"<< webpage fetching error for url: {url}")
+            print(f"<< webpage fetching error for url: {url} STATUS: {response.status_code} TEXT: {response.text}")
 
     @staticmethod
     def extract_item_from_page(soup:BeautifulSoup) -> Generator:

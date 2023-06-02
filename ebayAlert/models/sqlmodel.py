@@ -30,6 +30,7 @@ class EbayLink(Base):
     price_target = Column(Integer)
     price_info = Column(String)
     zipcodes = Column(String)
+    chat_id = Column(Integer)
 
 
 Base.metadata.create_all(engine)

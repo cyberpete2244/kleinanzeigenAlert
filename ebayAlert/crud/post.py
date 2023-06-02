@@ -4,13 +4,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.util import NoneType
 
 from ebayAlert.crud.base import CRUBBase
-from ebayAlert.ebayscrapping.ebayclass import EbayItem
+from ebayAlert.scrapping.klein import KleinItem
 from ebayAlert.models.sqlmodel import EbayPost
 
 
 class CRUDPost(CRUBBase):
 
-    def add_items_to_db(self, items: List[EbayItem], db: Session, link_id: int, write_database=True) -> List[EbayItem]:
+    def add_items_to_db(self, items: List[KleinItem], db: Session, link_id: int, write_database=True) -> List[KleinItem]:
         new_items = []
         print(f'Found {str(len(items))} items.', end=' ')
         somethingchangedindb = False

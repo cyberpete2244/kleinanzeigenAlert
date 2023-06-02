@@ -12,7 +12,7 @@ from ebayAlert import create_logger
 from ebayAlert.core.configs import configs
 from ebayAlert.crud.base import crud_link, get_session
 from ebayAlert.crud.post import crud_post
-from ebayAlert.ebayscrapping import ebayclass
+from ebayAlert.scrapping import klein
 from ebayAlert.telegram.telegramclass import telegram
 
 log = create_logger(__name__)
@@ -95,7 +95,7 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                     else:
                         mode = f'RANGE {link_model.price_low}€ - {link_model.price_high}€'
                     print(f'>> Searching ID:{link_model.id}: type \'{link_model.search_type}\', filter \'{link_model.search_string}\', mode: {mode}' + locationfilterhint)
-                    post_factory = ebayclass.EbayItemFactory(link_model, num_pages)
+                    post_factory = klein.KleinItemFactory(link_model, num_pages)
                     message_items = crud_post.add_items_to_db(db=db, items=post_factory.item_list,
                                                               link_id=link_model.id, write_database=write_database)
                     if link_model.status == 1:
@@ -110,14 +110,15 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
 
 
 def calc_benefit(target) -> int:
-    return round(target - target * 0.05 - 12)
+    return round(target - target * 0.15)
 
 
 def filter_message_items(link_model, message_items, telegram_message):
     firstmessagesent = False
     for item in message_items:
         evaluationlog = ""
-        worth_messaging = False
+        # default is true
+        worth_messaging = True
         # current price as integer
         item_price = item.price
         item_price_num = re.findall(r'\d+', re.sub("\.", "", item_price))
@@ -129,8 +130,20 @@ def filter_message_items(link_model, message_items, telegram_message):
         # pricerange visual indicator
         pricerange = ""
 
-        # check if message worth sending in two different modes
-        if type(link_model.price_target) != NoneType:
+        # check if search string exclusions exclude this result
+        if link_model.search_string != "":
+            search_term_parts = link_model.search_string.split(" ")
+            search_term_parts[:] = [x[1:] for x in search_term_parts if x.startswith("-")]
+            # generally exclude "defekt" items
+            search_term_parts.append("defekt")
+            for x in search_term_parts:
+                if worth_messaging and item.title.lower().find(x) > -1:
+                    worth_messaging = False
+                    evaluationlog += 'f'
+
+        # check if message worth sending by price in two different modes
+        # METHOD 1
+        if worth_messaging and type(link_model.price_target) != NoneType:
             # Mode: TARGET (= reach break even price, 0€ loss/benefit)
             price_low = int(link_model.price_target) * 0.7
             price_target = int(link_model.price_target)
@@ -140,9 +153,9 @@ def filter_message_items(link_model, message_items, telegram_message):
                 item.pricehint = "[Offer]"
                 worth_messaging = False  # LESS MESSAGES
                 evaluationlog += 'o'
-            elif price_low <= item_price_num <= price_benefit and "defekt" not in item.title:
+            elif price_low <= item_price_num <= price_benefit:
                 item.pricehint = f'[DEAL]'
-                worth_messaging = True
+                # worth_messaging = True
                 evaluationlog += 'X'
             elif price_benefit < item_price_num <= price_target and "VB" in item_price:
                 item.pricehint = "[Maybe]"
@@ -164,8 +177,8 @@ def filter_message_items(link_model, message_items, telegram_message):
             else:
                 pricerange = f"T0: {price_target}€ ({price_target - item_price_num}€)\nWIN: {price_benefit}€ ({price_benefit - item_price_num}€)\n"
             item.pricerange = pricerange
-
-        else:
+        # METHOD 2
+        if worth_messaging and type(link_model.price_high) != NoneType:
             # Mode: PRICERANGE
             # maximal item price to be shown
             price_max = round(int(link_model.price_high) * 1.2)
@@ -182,6 +195,10 @@ def filter_message_items(link_model, message_items, telegram_message):
                         pricerange += "."
             else:
                 pricerange = "......."
+
+            # price range not hit by default
+            worth_messaging = False
+
             if item_price_num <= 1:
                 # price is 0 or 1
                 worth_messaging = True
@@ -256,7 +273,10 @@ def filter_message_items(link_model, message_items, telegram_message):
             print(evaluationlog, end='')
 
             if dosend:
-                telegram.send_formated_message(item)
+                chat_id = configs.CHAT_ID
+                if type(link_model.chat_id) != NoneType:
+                    chat_id = link_model.chat_id
+                telegram.send_formated_message(item, chat_id)
 
     if firstmessagesent is False:
         print('  Nothing worth messaging.', end='')

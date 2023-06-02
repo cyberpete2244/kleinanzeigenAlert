@@ -3,7 +3,7 @@ from ebayAlert.core.configs import configs
 
 class Settings:
 
-    TELEGRAM_API_URL = f"https://api.telegram.org/bot{configs.BOTTOKEN}/sendMessage?chat_id={configs.CHAT_ID}&parse_mode=HTML&"""
+    TELEGRAM_API_URL = "https://api.telegram.org/bot{bottoken}/sendMessage?chat_id={chat_id}&parse_mode=HTML&"
     URL_BASE = "https://www.ebay-kleinanzeigen.de"
     URL_TYPE_GPU = "/s-pc-zubehoer-software/grafikkarten/anbieter:privat/anzeige:angebote/{NPAGE}{" \
                    "SEARCH_TERM}k0c225+pc_zubehoer_software.art_s:grafikkarten"
@@ -16,6 +16,8 @@ class Settings:
                        "SEARCH_TERM}k0c225+pc_zubehoer_software.art_s:prozessor_cpu"
     URL_TYPE_MEMORY = "/s-pc-zubehoer-software/speicher/anbieter:privat/anzeige:angebote/{NPAGE}{" \
                        "SEARCH_TERM}k0c225+pc_zubehoer_software.art_s:speicher"
+    URL_TYPE_TOYS = "/s-spielzeug/anbieter:privat/anzeige:angebote/{NPAGE}{" \
+                       "SEARCH_TERM}k0c23"
 
 
 settings = Settings()
