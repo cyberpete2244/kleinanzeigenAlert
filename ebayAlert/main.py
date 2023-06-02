@@ -148,6 +148,10 @@ def filter_message_items(link_model, message_items, telegram_message):
             price_low = int(link_model.price_target) * 0.7
             price_target = int(link_model.price_target)
             price_benefit = calc_benefit(price_target)
+
+            # price range not hit by default
+            worth_messaging = False
+
             if item_price_num <= 1:
                 # price is 0 or 1
                 item.pricehint = "[Offer]"
@@ -155,7 +159,7 @@ def filter_message_items(link_model, message_items, telegram_message):
                 evaluationlog += 'o'
             elif price_low <= item_price_num <= price_benefit:
                 item.pricehint = f'[DEAL]'
-                # worth_messaging = True
+                worth_messaging = True
                 evaluationlog += 'X'
             elif price_benefit < item_price_num <= price_target and "VB" in item_price:
                 item.pricehint = "[Maybe]"
