@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ebayAlert import create_logger
 from ebayAlert.db.db import Session as Session_DB
-from ebayAlert.models.sqlmodel import EbayLink, Base
+from ebayAlert.models.sqlmodel import Base, Search
 
 log = create_logger(__name__)
 
@@ -26,7 +26,7 @@ def get_session():
         session.close()
 
 
-class CRUBBase:
+class CRUDBase:
     def __init__(self, model):
         self.model = model
 
@@ -43,6 +43,13 @@ class CRUBBase:
         results = db.execute(select(self.model).filter_by(**clean_dict).limit(1)).first()
         if results:
             return results[0]
+
+    def get_all_matching(self, key_mapping: Dict[str, str], db: Session) -> Optional[Model]:
+        clean_dict = self._get_clean_dict(key_mapping)
+        if not clean_dict:
+            return
+        results = db.execute(select(self.model).filter_by(**clean_dict)).scalars().all()
+        return results
 
     def create(self, items: Dict[str, Any], db: Session) -> Optional[Model]:
         clean_dict = self._get_clean_dict(items)
@@ -61,7 +68,7 @@ class CRUBBase:
             return
         item = self.model(**clean_dict)
         for x in items:
-            if x != "identifier":
+            if x != "identifier" and x != identifier:
                 db.query(self.model)\
                     .filter(getattr(self.model, identifier) == getattr(item, identifier))\
                     .update({x: getattr(item, x)})
@@ -87,4 +94,4 @@ class CRUBBase:
         return new_object
 
 
-crud_link = CRUBBase(EbayLink)
+crud_search = CRUDBase(Search)

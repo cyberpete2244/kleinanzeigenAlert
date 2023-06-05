@@ -7,8 +7,8 @@ from ebayAlert.db.db import Base, engine
 log = create_logger(__name__)
 
 
-class EbayPost(Base):
-    __tablename__ = "ebay_post"
+class KleinPost(Base):
+    __tablename__ = "klein_post"
 
     id = Column(Integer, primary_key=True)
     title = Column(String)
@@ -18,8 +18,20 @@ class EbayPost(Base):
     date = Column(DateTime(timezone=True), server_default=func.now())
 
 
-class EbayLink(Base):
-    __tablename__ = "ebay_link"
+class EbayPost(Base):
+    __tablename__ = "ebay_post"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String)
+    price = Column(String)
+    shipping = Column(String)
+    post_id = Column(Integer)
+    link_id = Column(Integer)
+    date = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Search(Base):
+    __tablename__ = "search"
 
     id = Column(Integer, primary_key=True)
     status = Column(Integer)

@@ -10,9 +10,11 @@ from geopy import distance
 
 from ebayAlert import create_logger
 from ebayAlert.core.configs import configs
-from ebayAlert.crud.base import crud_link, get_session
-from ebayAlert.crud.post import crud_post
-from ebayAlert.scrapping import klein
+from ebayAlert.core.settings import settings
+from ebayAlert.crud.base import crud_search, get_session
+from ebayAlert.crud.post import crud_klein, crud_ebay
+from ebayAlert.models.sqlmodel import EbayPost
+from ebayAlert.scrapping import items
 from ebayAlert.telegram.telegramclass import telegram
 
 log = create_logger(__name__)
@@ -67,11 +69,11 @@ def start(silent, nonperm, exclusive, depth):
 
 
 def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_message=False, num_pages=1):
-    searches = crud_link.get_all(db=db)
+    searches = crud_search.get_all(db=db)
     if searches:
         for link_model in searches:
             if (exclusive_id is not False and exclusive_id == link_model.id) or exclusive_id is False:
-                if link_model.status != 0:
+                if link_model.status != 0 and link_model.search_type != "EBAY":
                     """
                     every search has a status
                     0 = search disabled
@@ -95,10 +97,35 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                     else:
                         mode = f'RANGE {link_model.price_low}€ - {link_model.price_high}€'
                     print(f'>> Searching ID:{link_model.id}: type \'{link_model.search_type}\', filter \'{link_model.search_string}\', mode: {mode}' + locationfilterhint)
-                    post_factory = klein.KleinItemFactory(link_model, num_pages)
-                    message_items = crud_post.add_items_to_db(db=db, items=post_factory.item_list,
+                    klein_factory = items.KleinItemFactory(link_model, num_pages)
+                    message_items = crud_klein.add_items_to_db(db=db, items=klein_factory.item_list,
                                                               link_id=link_model.id, write_database=write_database)
+
                     if link_model.status == 1:
+                        # check if there are unmatched ebay items and match them
+                        db_results = crud_ebay.get_all_matching({"link_id": None}, db)
+                        if db_results:
+                            for item in db_results:
+                                # check if ebay item fits the search terms considering the exclusions
+                                item_matching = True
+                                item_title = item.title.lower()
+                                search_terms = link_model.search_string.split(" ")
+                                for term in search_terms:
+                                    if not term.startswith("-"):
+                                        if item_title.find(term) == -1:
+                                            item_matching = False
+                                    elif term.startswith("-"):
+                                        if item_title.find(term) > -1:
+                                            item_matching = False
+                                if item_matching:
+                                    # update link_id for ebay item
+                                    if write_database:
+                                        crud_ebay.update({"identifier": "post_id", "post_id": int(item.post_id), "link_id": int(link_model.id)}, db=db)
+                                    # add to message items
+                                    item.location = "Ebay"
+                                    item.link = settings.EBAY_BASE_ITEM + str(item.post_id)
+                                    message_items.append(item)
+
                         # check for items worth sending and send
                         if len(message_items) > 0:
                             filter_message_items(link_model, message_items, telegram_message=telegram_message)
@@ -107,6 +134,16 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                     else:
                         # end output
                         print(' (Silent search)')
+                elif link_model.status != 0 and link_model.search_type == "EBAY":
+                    """
+                    searches on ebay just require an URL.
+                    - all items that are not in the separate table in db yet are added
+                    - matching to regular searches is done while processing the specified search
+                    - time delay 
+                    """
+                    print(f'>> Searching ID:{link_model.id}: type \'{link_model.search_type}\'')
+                    ebay_factory = items.EbayItemFactory(link_model)
+                    crud_ebay.add_items_to_db(db=db, items=ebay_factory.item_list, write_database=write_database)
 
 
 def calc_benefit(target) -> int:
@@ -151,6 +188,7 @@ def filter_message_items(link_model, message_items, telegram_message):
 
             # price range not hit by default
             worth_messaging = False
+            item.pricehint = ""
 
             if item_price_num <= 1:
                 # price is 0 or 1
@@ -181,6 +219,9 @@ def filter_message_items(link_model, message_items, telegram_message):
             else:
                 pricerange = f"T0: {price_target}€ ({price_target - item_price_num}€)\nWIN: {price_benefit}€ ({price_benefit - item_price_num}€)\n"
             item.pricerange = pricerange
+            if type(item) == EbayPost:
+                item.print_price = f'{item.price}\n{item.pricerange}'
+
         # METHOD 2
         if worth_messaging and type(link_model.price_high) != NoneType:
             # Mode: PRICERANGE

@@ -4,7 +4,10 @@ from ebayAlert.core.configs import configs
 class Settings:
 
     TELEGRAM_API_URL = "https://api.telegram.org/bot{bottoken}/sendMessage?chat_id={chat_id}&parse_mode=HTML&"
-    URL_BASE = "https://www.ebay-kleinanzeigen.de"
+
+    URL_BASE = "https://www.kleinanzeigen.de"
+    EBAY_BASE_ITEM = "https://www.ebay.de/itm/"
+
     URL_TYPE_GPU = "/s-pc-zubehoer-software/grafikkarten/anbieter:privat/anzeige:angebote/{NPAGE}{" \
                    "SEARCH_TERM}k0c225+pc_zubehoer_software.art_s:grafikkarten"
     URL_TYPE_HIFI = "/s-audio-hifi/anbieter:privat/{NPAGE}{SEARCH_TERM}k0c172"

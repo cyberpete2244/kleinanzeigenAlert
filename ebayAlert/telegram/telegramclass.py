@@ -2,7 +2,7 @@ import requests
 
 from ebayAlert.core.configs import configs
 from ebayAlert.core.settings import settings
-from ebayAlert.scrapping.klein import KleinItem
+from ebayAlert.scrapping.items import KleinItem
 from urllib.parse import urlencode
 
 

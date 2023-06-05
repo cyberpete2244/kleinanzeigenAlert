@@ -1,14 +1,14 @@
-from typing import List
+from typing import List, Generator
 
 from sqlalchemy.orm import Session
 from sqlalchemy.util import NoneType
 
-from ebayAlert.crud.base import CRUBBase
-from ebayAlert.scrapping.klein import KleinItem
-from ebayAlert.models.sqlmodel import EbayPost
+from ebayAlert.crud.base import CRUDBase
+from ebayAlert.scrapping.items import KleinItem, EbayItem, BaseItem
+from ebayAlert.models.sqlmodel import KleinPost, EbayPost
 
 
-class CRUDPost(CRUBBase):
+class CRUDKlein(CRUDBase):
 
     def add_items_to_db(self, items: List[KleinItem], db: Session, link_id: int, write_database=True) -> List[KleinItem]:
         new_items = []
@@ -47,4 +47,29 @@ class CRUDPost(CRUBBase):
         return new_items
 
 
-crud_post = CRUDPost(EbayPost)
+class CRUDEbay(CRUDBase):
+
+    def add_items_to_db(self, items: List[EbayItem], db: Session, write_database=True) -> List[EbayItem]:
+        new_items = []
+        print(f'Found {str(len(items))} items.', end=' ')
+        somethingchangedindb = False
+        dbchangeslog = ""
+        for item in items:
+            # print(f'post_id: {str(item.id)}, price: {item.price}, title: {item.title}')
+            db_result = self.get_by_key({"post_id": str(item.id)}, db)
+            if not db_result:
+                # new article
+                somethingchangedindb = True
+                dbchangeslog += "E"
+                if write_database:
+                    self.create({"post_id": str(item.id), "price": item.price, "title": item.title, "shipping": item.shipping}, db=db)
+                new_items.append(item)
+        if somethingchangedindb is True:
+            print("Changes in DB (Ebay):", dbchangeslog)
+        else:
+            print('No new Ebay items.')
+        return new_items
+
+
+crud_ebay = CRUDEbay(EbayPost)
+crud_klein = CRUDKlein(KleinPost)

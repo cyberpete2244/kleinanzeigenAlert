@@ -14,14 +14,34 @@ from ebayAlert.scrapping.scrapeops import header_list, get_random_header
 log = create_logger(__name__)
 
 
-class KleinItem:
-    """Class ebay item"""
+class BaseItem:
     def __init__(self, contents: Tag):
         self.contents = contents
         self.old_price = ""
         self.pricehint = ""
         self.pricerange = ""
 
+    @property
+    def print_price(self) -> str:
+        print_price = self.price
+        if self.old_price != "":
+            print_price = "NEW:" + self.old_price + " --> " + print_price
+        if self.pricehint != "":
+            print_price += " " + self.pricehint
+        if self.pricerange != "":
+            print_price += "\n" + self.pricerange
+        return print_price
+
+    def __repr__(self):
+        return '{}, {}; {}'.format(self.id, self.title, self.price)
+
+    def _find_text_in_class(self, class_name: str):
+        found = self.contents.find(attrs={"class": f"{class_name}"})
+        if found:
+            return found.text.strip()
+
+
+class KleinItem(BaseItem):
     @property
     def link(self) -> str:
         if self.contents.a.get('href'):
@@ -42,16 +62,6 @@ class KleinItem:
         return self._find_text_in_class("aditem-main--middle--price-shipping--price") or "No Price"
 
     @property
-    def print_price(self) -> str:
-        print_price = self.price
-        if self.old_price != "":
-            print_price = "NEW:" + self.old_price + " --> " + print_price
-        if self.pricehint != "":
-            print_price += " " + self.pricehint
-        print_price += "\n" + self.pricerange
-        return print_price
-
-    @property
     def description(self) -> str:
         description = self._find_text_in_class("aditem-main--middle--description")
         if description:
@@ -67,16 +77,56 @@ class KleinItem:
     def location(self):
         return self._find_text_in_class("aditem-main--top--left") or "No location"
 
-    def __repr__(self):
-        return '{}; {}'.format(self.title, self.price)
 
-    def _find_text_in_class(self, class_name: str):
-        found = self.contents.find(attrs={"class": f"{class_name}"})
-        if found:
-            return found.text.strip()
+class EbayItem(BaseItem):
+    @property
+    def link(self) -> str:
+        url = self.contents.a.get('href')
+        return url[:url.index("?")]
+
+    @property
+    def shipping(self) -> str:
+        return self._find_text_in_class("s-item__shipping s-item__logisticsCost") or "No Shipping"
+
+    @property
+    def title(self) -> str:
+        return self._find_text_in_class("s-item__title") or "No Title"
+
+    @property
+    def price(self) -> str:
+        # strip EUR and add € at end
+        price = self._find_text_in_class("s-item__price") or 0
+        if price != 0:
+            price = price[4:price.index(',')]
+        return f'{price} €'
+
+    @property
+    def description(self) -> str:
+        return "No Description"
+
+    @property
+    def id(self) -> int:
+        ebaylink = self.contents.a.get('href')
+        return int(ebaylink[ebaylink.rindex("/")+1:ebaylink.index("?")]) or 0
+
+    @property
+    def location(self):
+        return "Ebay"
 
 
-class KleinItemFactory:
+class ItemFactory:
+    @staticmethod
+    def get_webpage(url: str) -> BeautifulSoup:
+        response = requests.get(url, headers=get_random_header(header_list))
+        if response and response.status_code == 200:
+            cleaned_response = response.text.replace("&#8203", "")
+            soup = BeautifulSoup(cleaned_response, "html.parser")
+            return soup
+        else:
+            print(f"<< webpage fetching error for url: {url} STATUS: {response.status_code} TEXT: {response.text}")
+
+
+class KleinItemFactory(ItemFactory):
     def __init__(self, link_model, npage_max):
         self.item_list = []
         npage = 1
@@ -113,19 +163,26 @@ class KleinItemFactory:
         return url
 
     @staticmethod
-    def get_webpage(url: str) -> BeautifulSoup:
-        response = requests.get(url, headers=get_random_header(header_list))
-        if response and response.status_code == 200:
-            cleaned_response = response.text.replace("&#8203", "")
-            soup = BeautifulSoup(cleaned_response, "html.parser")
-            return soup
-        else:
-            print(f"<< webpage fetching error for url: {url} STATUS: {response.status_code} TEXT: {response.text}")
-
-    @staticmethod
-    def extract_item_from_page(soup:BeautifulSoup) -> Generator:
+    def extract_item_from_page(soup: BeautifulSoup) -> Generator:
         result = soup.find(attrs={"id": "srchrslt-adtable"})
         if result:
             for item in result.find_all(attrs={"class": "ad-listitem lazyload-item"}):
                 if item.article:
                     yield item.article
+
+
+class EbayItemFactory(ItemFactory):
+    def __init__(self, link_model):
+        self.item_list = []
+        web_page_soup = self.get_webpage(link_model.search_string)
+        if web_page_soup:
+            articles = self.extract_item_from_page(web_page_soup)
+            self.item_list += [EbayItem(article) for article in articles]
+
+    @staticmethod
+    def extract_item_from_page(soup: BeautifulSoup) -> Generator:
+        result = soup.find(attrs={"class": "b-list__items_nofooter"})
+        if result:
+            for item in result.find_all(attrs={"class": "s-item s-item--large"}):
+                if item:
+                    yield item
