@@ -45,7 +45,7 @@ class KleinItem(BaseItem):
     @property
     def link(self) -> str:
         if self.contents.a.get('href'):
-            return settings.URL_BASE + self.contents.a.get('href')
+            return settings.KLEIN_URL_BASE + self.contents.a.get('href')
         else:
             return "No url found."
 
@@ -157,7 +157,7 @@ class KleinItemFactory(ItemFactory):
             search_term_parts[:] = [x for x in search_term_parts if not x.startswith("-")]
             search_term = "-".join(str(y) for y in search_term_parts) + "/"
         # currently price is not considered in getting the results, articles are filtered later
-        url = settings.URL_BASE
+        url = settings.KLEIN_URL_BASE
         url += getattr(settings, "URL_TYPE_"+link_model.search_type).format(SEARCH_TERM=search_term, NPAGE=current_page)
         # print(url)
         return url

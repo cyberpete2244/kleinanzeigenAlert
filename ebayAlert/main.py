@@ -147,7 +147,7 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
 
 
 def calc_benefit(target) -> int:
-    return round(target - target * 0.15)
+    return round(target - target * configs.TARGET_MODE_BENEFIT)
 
 
 def filter_message_items(link_model, message_items, telegram_message):
