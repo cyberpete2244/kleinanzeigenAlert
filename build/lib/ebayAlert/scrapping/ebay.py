@@ -1,6 +1,7 @@
 from typing import Generator
 from bs4 import BeautifulSoup
 
+from ebayAlert.core.settings import settings
 from ebayAlert.scrapping.items import BaseItem, ItemFactory
 from ebayAlert import create_logger
 
@@ -46,7 +47,7 @@ class EbayItem(BaseItem):
 class EbayItemFactory(ItemFactory):
     def __init__(self, link_model):
         self.item_list = []
-        web_page_soup = self.get_webpage(link_model.search_string)
+        web_page_soup = self.get_webpage(settings.EBAY_URL_BASE + link_model.url)
         if web_page_soup:
             articles = self.extract_item_from_page(web_page_soup)
             self.item_list += [EbayItem(article) for article in articles]

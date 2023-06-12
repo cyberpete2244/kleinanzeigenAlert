@@ -1,4 +1,4 @@
-# kleinanzeigenAlert - (ebAlert)
+# kleinanzeigenAlert - (ebayAlert)
 Small CLI program that will send you a Telegram message for every new posts on the specific links of the Kleinanzeigen and to some extent Ebay websites. 
 
 This is a fork from [vinc3PO/ebayKleinanzeigenAlert](https://github.com/vinc3PO/ebayKleinanzeigenAlert)
@@ -31,19 +31,21 @@ No API required - Only URL of the query.
    ```sh
    pip install .
    ```
-8. Run the `ebAlert` CLI
+8. Run the `ebayAlert` CLI
    ```sh
-   python3 -m ebAlert
+   python3 -m ebayAlert
    ```
 
 ## Usage & Example
 I removed the ability to add searches using CLI, might add it back later. Currently one need to set up searches using SQL queries directly in DB or by using any third party SQL manager (e.g. SQLite3). 
-* ```ebAlert start [opts] ``` to run script with options
-* ```ebAlert start --help ``` to get list of options
-  
-* ```ebAlert start ``` to start receiving notification or generally use this in a cronjob
+* ```ebayAlert start [opts] ``` to run script with options
+* ```ebayAlert start --help ``` to get list of options
 
-* Typically, this would be run as a cron job on an hourly basis.
+Run regular cli command to initialise DB:  
+
+* ```ebayAlert start ``` to start receiving notification or init database
+
+Typically, this would be run as a cron job on an hourly basis.
 
 ## Creating Searches (TODO)
 search types (Kleinanzeigen URLS) need to be defined in DB. They and are templates for arguments for Kleinanzeigen searches in a subdomain format. (e.g. "/s-spielzeug/anbieter:privat/anzeige:angebote/{NPAGE}{SEARCH_TERM}k0c23")
@@ -67,12 +69,12 @@ search types (Kleinanzeigen URLS) need to be defined in DB. They and are templat
 
 ## ChangeLog
   1.2 (forked) -> 2.0
-* Database rework
-* Searches are added in DB directly
-* Items filtering by distance possible. Distance can be defined globally or per search.
-* Headers for scraper are generated randomly using ScrapeOPS API
-* Searching Ebay is possible. Matching of items to Kleinanzeigen searches is consequent executions
+* database rework
+* searches are created in database directly
+* items filtering by distance possible. Distance can be defined globally or per search.
+* headers for scraper are generated randomly using ScrapeOPS API
+* searching Ebay is possible indirectly: matching of items to Kleinanzeigen searches is done on consequent executions
 
 ## Future Plans
-
 * add functionality to interact with script via telegram.
+* add cli option to add, edit, remove searches and types

@@ -105,11 +105,13 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                     klein_factory = KleinItemFactory(link_model, num_pages)
                     message_items = crud_klein.add_items_to_db(db=db, items=klein_factory.item_list, link_id=link_model.id, write_database=write_database)
 
-                    # EBAY search enrichment
                     if link_model.status == 1: # run matching only search is active (!silent)
+
+                        # EBAY search enrichment
                         # check if there are unmatched ebay items for same search type and match them
                         db_results = crud_ebay.get_all_matching({"link_id": None, "search_type": search_type[1]}, db)
                         if db_results:
+                            enrich_count = 0
                             for item in db_results:
                                 # check if ebay item fits the search terms considering the exclusions
                                 item_matching = True
@@ -123,6 +125,7 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                                         if item_title.find(term) > -1:
                                             item_matching = False
                                 if item_matching:
+                                    enrich_count += 1
                                     # update link_id for ebay item if matched
                                     if write_database:
                                         crud_ebay.update({"identifier": "post_id", "post_id": int(item.post_id), "link_id": int(link_model.id)}, db=db)
@@ -130,6 +133,8 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                                     item.location = "Ebay"
                                     item.link = settings.EBAY_BASE_ITEM + str(item.post_id)
                                     message_items.append(item)
+                            if enrich_count > 0:
+                                print(' Matched from Ebay:' + str(enrich_count), end=' ')
 
                         # check for items worth sending and send
                         if len(message_items) > 0:
