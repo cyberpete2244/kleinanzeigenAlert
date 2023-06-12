@@ -11,9 +11,9 @@ def get_headers_list():
     return json_response.get('result', [])
 
 
-header_list = get_headers_list()
-
-
 def get_random_header(header_list):
     random_index = randint(0, len(header_list) - 1)
     return header_list[random_index]
+
+
+header_list = get_headers_list()

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/ebayKleinanzeigenAlert.iml" filepath="$PROJECT_DIR$/.idea/ebayKleinanzeigenAlert.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../kleinanzeigenAlert/.idea/kleinanzeigenAlert.iml" filepath="$PROJECT_DIR$/../kleinanzeigenAlert/.idea/kleinanzeigenAlert.iml" />
     </modules>
   </component>
 </project>

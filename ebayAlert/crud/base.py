@@ -1,12 +1,12 @@
 from contextlib import contextmanager
 from typing import Dict, Any, List, TypeVar, Optional
 
-from sqlalchemy import select, delete, case
+from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
 from ebayAlert import create_logger
 from ebayAlert.db.db import Session as Session_DB
-from ebayAlert.models.sqlmodel import Base, Search
+from ebayAlert.models.sqlmodel import Base, Search, SearchType
 
 log = create_logger(__name__)
 
@@ -95,3 +95,4 @@ class CRUDBase:
 
 
 crud_search = CRUDBase(Search)
+crud_search_type = CRUDBase(SearchType)

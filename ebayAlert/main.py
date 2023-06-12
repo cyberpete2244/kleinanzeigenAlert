@@ -11,10 +11,11 @@ from geopy import distance
 from ebayAlert import create_logger
 from ebayAlert.core.configs import configs
 from ebayAlert.core.settings import settings
-from ebayAlert.crud.base import crud_search, get_session
+from ebayAlert.crud.base import crud_search, get_session, crud_search_type
 from ebayAlert.crud.post import crud_klein, crud_ebay
 from ebayAlert.models.sqlmodel import EbayPost
-from ebayAlert.scrapping import items
+from ebayAlert.scrapping.ebay import EbayItemFactory
+from ebayAlert.scrapping.klein import KleinItemFactory
 from ebayAlert.telegram.telegramclass import telegram
 
 log = create_logger(__name__)
@@ -34,8 +35,8 @@ def cli() -> BaseCommand:
 @cli.command(options_metavar="<options>", help="Fetch new posts and send notifications.")
 @click.option("-s", "--silent", is_flag=True, help="Do not send notifications.")
 @click.option("-n", "--nonperm", is_flag=True, help="Do not edit database.")
-@click.option("-e", "--exclusive", 'exclusive', metavar="<link id>", help="Run only one search.")
-@click.option("-d", "--depth", 'depth', metavar="<pages n>", help="When available, scan n pages (default 1).")
+@click.option("-e", "--exclusive", 'exclusive', metavar="<link id>", help="Run only one search by ID.")
+@click.option("-d", "--depth", 'depth', metavar="<pages n>", help="When available (on Kleinanzeigen), scan n pages of pagination (default 1).")
 def start(silent, nonperm, exclusive, depth):
     """
     cli related to the main package. Fetch new posts and send notifications.
@@ -73,7 +74,11 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
     if searches:
         for link_model in searches:
             if (exclusive_id is not False and exclusive_id == link_model.id) or exclusive_id is False:
-                if link_model.status != 0 and link_model.search_type != "EBAY":
+                # get URL by search_type
+                db_search_type = crud_search_type.get_by_key({"search_type": link_model.search_type}, db)
+                link_model.url = db_search_type.search_url
+                search_type = link_model.search_type.split("_")
+                if link_model.status != 0 and search_type[0] == "KLEIN":
                     """
                     every search has a status
                     0 = search disabled
@@ -97,13 +102,13 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                     else:
                         mode = f'RANGE {link_model.price_low}€ - {link_model.price_high}€'
                     print(f'>> Searching ID:{link_model.id}: type \'{link_model.search_type}\', filter \'{link_model.search_string}\', mode: {mode}' + locationfilterhint)
-                    klein_factory = items.KleinItemFactory(link_model, num_pages)
-                    message_items = crud_klein.add_items_to_db(db=db, items=klein_factory.item_list,
-                                                              link_id=link_model.id, write_database=write_database)
+                    klein_factory = KleinItemFactory(link_model, num_pages)
+                    message_items = crud_klein.add_items_to_db(db=db, items=klein_factory.item_list, link_id=link_model.id, write_database=write_database)
 
-                    if link_model.status == 1:
-                        # check if there are unmatched ebay items and match them
-                        db_results = crud_ebay.get_all_matching({"link_id": None}, db)
+                    # EBAY search enrichment
+                    if link_model.status == 1: # run matching only search is active (!silent)
+                        # check if there are unmatched ebay items for same search type and match them
+                        db_results = crud_ebay.get_all_matching({"link_id": None, "search_type": search_type[1]}, db)
                         if db_results:
                             for item in db_results:
                                 # check if ebay item fits the search terms considering the exclusions
@@ -118,7 +123,7 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                                         if item_title.find(term) > -1:
                                             item_matching = False
                                 if item_matching:
-                                    # update link_id for ebay item
+                                    # update link_id for ebay item if matched
                                     if write_database:
                                         crud_ebay.update({"identifier": "post_id", "post_id": int(item.post_id), "link_id": int(link_model.id)}, db=db)
                                     # add to message items
@@ -134,16 +139,15 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                     else:
                         # end output
                         print(' (Silent search)')
-                elif link_model.status != 0 and link_model.search_type == "EBAY":
+                elif link_model.status == 1 and search_type[0] == "EBAY":
                     """
-                    searches on ebay just require an URL.
-                    - all items that are not in the separate table in db yet are added
-                    - matching to regular searches is done while processing the specified search
-                    - time delay 
+                    EBAY search enrichment
+                    - all items that are not in the db (by ebay ID) are added
+                    - matching to "regular" searches is done while processing the specified search on next script execution
                     """
                     print(f'>> Searching ID:{link_model.id}: type \'{link_model.search_type}\'')
-                    ebay_factory = items.EbayItemFactory(link_model)
-                    crud_ebay.add_items_to_db(db=db, items=ebay_factory.item_list, write_database=write_database)
+                    ebay_factory = EbayItemFactory(link_model)
+                    crud_ebay.add_items_to_db(db=db, items=ebay_factory.item_list, search_type=search_type[1], write_database=write_database)
 
 
 def calc_benefit(target) -> int:
@@ -281,7 +285,7 @@ def filter_message_items(link_model, message_items, telegram_message):
         if checkzipcodes > 0 and worth_messaging and item.shipping == "No Shipping":
             evaluationlog += '?'
             # ZIPCODES in DB like this: dist1,zip11,zip12,..,zip1N-dist2,zip21..
-            geocoder = Nominatim(user_agent="cyberpete2244/ebayKleinanzeigenAlert")
+            geocoder = Nominatim(user_agent="cyberpete2244/kleinanzeigenAlert")
             geoloc_item = geocoder.geocode(re.findall(r'\d+', item.location))
             # cycle through areas and through zipcodes
             areas = link_model.zipcodes.split('-') if checkzipcodes == 1 else configs.LOCATION_FILTER.split('-')

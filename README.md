@@ -1,5 +1,7 @@
-# ebayKleinanzeigenAlert - (ebAlert)
-Small CLI program that will send you a Telegram message for every new posts on the specific links of the Ebay Kleinanzeigen website. 
+# kleinanzeigenAlert - (ebAlert)
+Small CLI program that will send you a Telegram message for every new posts on the specific links of the Kleinanzeigen and to some extent Ebay websites. 
+
+This is a fork from [vinc3PO/ebayKleinanzeigenAlert](https://github.com/vinc3PO/ebayKleinanzeigenAlert)
 
 No API required - Only URL of the query.
 
@@ -7,17 +9,17 @@ No API required - Only URL of the query.
 
 1. Clone this repository
    ```sh
-   git clone https://github.com/cyberpete2244/ebayKleinanzeigenAlert
+   git clone https://github.com/cyberpete2244/kleinanzeigenAlert
    ```
 2. Navigate to the cloned repository
    ```sh
-   cd ebayKleinanzeigenAlert
+   cd kleinanzeigenAlert
    ```
 3. Create a Telegram Bot
    1. Open the chat with [@BotFather](https://t.me/BotFather)
    2. Enter `/newbot`
-   3. Enter the name of your Bot (e.g. eBay Kleinanzeigen Bot)
-   4. Enter an unique username for your bot (e.g. my_ebay_kleinanzeigen_bot)
+   3. Enter the name of your Bot (e.g. Kleinanzeigen Bot)
+   4. Enter an unique username for your bot (e.g. my_kleinanzeigen_bot)
    5. Copy the token
 4. Get you Telegram Message ID
    1. Open the chat with [@RawDataBot](https://t.me/RawDataBot)
@@ -31,56 +33,46 @@ No API required - Only URL of the query.
    ```
 8. Run the `ebAlert` CLI
    ```sh
-   python -m ebAlert
+   python3 -m ebAlert
    ```
 
 ## Usage & Example
-* ```ebAlert links [opts] ``` to show, add, remove links
-* ```ebAlert links --help ``` to get list of options for the links
+I removed the ability to add searches using CLI, might add it back later. Currently one need to set up searches using SQL queries directly in DB or by using any third party SQL manager (e.g. SQLite3). 
+* ```ebAlert start [opts] ``` to run script with options
+* ```ebAlert start --help ``` to get list of options
   
-* ```ebAlert start``` to start receiving notification
+* ```ebAlert start ``` to start receiving notification or generally use this in a cronjob
 
-
-* ```ebAlert links -a "https://www.ebay...k0l9354r20"```  This assumes that you just had a look through the web page already, so no notification will be send. 
 * Typically, this would be run as a cron job on an hourly basis.
 
+## Creating Searches (TODO)
+search types (Kleinanzeigen URLS) need to be defined in DB. They and are templates for arguments for Kleinanzeigen searches in a subdomain format. (e.g. "/s-spielzeug/anbieter:privat/anzeige:angebote/{NPAGE}{SEARCH_TERM}k0c23")
+* parameter in these templates is
+* {SEARCH_TERM}: This is the placeholder for pagination and an actual search string to narrow Kleinanzeigen searches 
+
 ## Requirements
-* A telegram bot API token and your personal conversation id
+* A telegram bot API token and your personal conversation ID
+* ScrapeOPS API token
 * Python 3
-* click, requests, bs4 and sqlalchemy (arguably sqlalchemy is a little overkill for that purpose)
+* Libraries
+  * click
+  * requests
+  * bs4
+  * sqlalchemy
+  * bs4
+  * beautifulsoup4
+  * geopy
+  * setuptools
+  * scrapeops-scrapy
 
 ## ChangeLog
- 1.1 -> 1.2
-* No price fix (dandud100)
-* Updated Readme (nilsreichardt)
-
- 1.0 -> 1.1
-* Refactoring
-* Removing most of the data added to database as it was not used
-* Move to SQLalchemy 1.4
-* Adding testing suite
-* Better handling of special characters that messed up the telegram message
-* Preparing for multiple chat id
-
- 0.6 -> 1.0
-* Refactoring.
-* Add TOKEN and CHAT_ID taken from environment variable. 
-* Fix title and city and distance if so.
-* Update telegram message.  
+  1.2 (forked) -> 2.0
+* Database rework
+* Searches are added in DB directly
+* Items filtering by distance possible. Distance can be defined globally or per search.
+* Headers for scraper are generated randomly using ScrapeOPS API
+* Searching Ebay is possible. Matching of items to Kleinanzeigen searches is consequent executions
 
 ## Future Plans
 
-* add functionality to add links directly via telegram.
-
-## Development Branch
-
-** dev_telegram **
-* Bot data stored in the database
-* Multibot allowed
-* Possibility to choose towards which bot goes which notification
-* Docker
-
-## Featured German Tutorial
-
-[![Watch on YouTube:](https://img.youtube.com/vi/lAqDkUdGKy0/mqdefault.jpg)](https://youtu.be/lAqDkUdGKy0)
-<br>https://youtu.be/lAqDkUdGKy0
+* add functionality to interact with script via telegram.

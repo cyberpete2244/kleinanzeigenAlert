@@ -2,7 +2,6 @@ import requests
 
 from ebayAlert.core.configs import configs
 from ebayAlert.core.settings import settings
-from ebayAlert.scrapping.items import KleinItem
 from urllib.parse import urlencode
 
 
@@ -26,7 +25,7 @@ class SendingClass:
         if response == 200:
             return response.json()["ok"]
 
-    def send_formated_message(self, item: KleinItem, chat_id):
+    def send_formated_message(self, item, chat_id):
         message = f"{configs.SOURCE_INDICATOR}{item.title}\n\n{item.print_price}\n\n{item.shipping}\n({item.location})\n\n"
         url = f'<a href="{item.link}">{item.link}</a>'
         self.send_message(message + url, chat_id)

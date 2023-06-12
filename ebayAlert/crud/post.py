@@ -1,11 +1,13 @@
-from typing import List, Generator
+from typing import List
 
 from sqlalchemy.orm import Session
 from sqlalchemy.util import NoneType
 
 from ebayAlert.crud.base import CRUDBase
-from ebayAlert.scrapping.items import KleinItem, EbayItem, BaseItem
+
 from ebayAlert.models.sqlmodel import KleinPost, EbayPost
+from ebayAlert.scrapping.ebay import EbayItem
+from ebayAlert.scrapping.klein import KleinItem
 
 
 class CRUDKlein(CRUDBase):
@@ -49,7 +51,7 @@ class CRUDKlein(CRUDBase):
 
 class CRUDEbay(CRUDBase):
 
-    def add_items_to_db(self, items: List[EbayItem], db: Session, write_database=True) -> List[EbayItem]:
+    def add_items_to_db(self, items: List[EbayItem], search_type, db: Session, write_database=True) -> List[EbayItem]:
         new_items = []
         print(f'Found {str(len(items))} items.', end=' ')
         somethingchangedindb = False
@@ -62,7 +64,7 @@ class CRUDEbay(CRUDBase):
                 somethingchangedindb = True
                 dbchangeslog += "E"
                 if write_database:
-                    self.create({"post_id": str(item.id), "price": item.price, "title": item.title, "shipping": item.shipping}, db=db)
+                    self.create({"post_id": str(item.id), "search_type": search_type, "price": item.price, "title": item.title, "shipping": item.shipping}, db=db)
                 new_items.append(item)
         if somethingchangedindb is True:
             print("Changes in DB (Ebay):", dbchangeslog)

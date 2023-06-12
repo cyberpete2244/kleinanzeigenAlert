@@ -22,6 +22,7 @@ class EbayPost(Base):
     __tablename__ = "ebay_post"
 
     id = Column(Integer, primary_key=True)
+    search_type = Column(String)
     title = Column(String)
     price = Column(String)
     shipping = Column(String)
@@ -43,6 +44,14 @@ class Search(Base):
     price_info = Column(String)
     zipcodes = Column(String)
     chat_id = Column(Integer)
+
+
+class SearchType(Base):
+    __tablename__ = "search_type"
+
+    id = Column(Integer, primary_key=True)
+    search_type = Column(String)
+    search_url = Column(String)
 
 
 Base.metadata.create_all(engine)
