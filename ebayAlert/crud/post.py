@@ -11,7 +11,6 @@ from ebayAlert.scrapping.klein import KleinItem
 
 
 class CRUDKlein(CRUDBase):
-
     def add_items_to_db(self, items: List[KleinItem], db: Session, link_id: int, write_database=True) -> List[KleinItem]:
         new_items = []
         print(f'Found {str(len(items))} items.', end=' ')
@@ -50,7 +49,6 @@ class CRUDKlein(CRUDBase):
 
 
 class CRUDEbay(CRUDBase):
-
     def add_items_to_db(self, items: List[EbayItem], search_type, db: Session, write_database=True) -> List[EbayItem]:
         new_items = []
         print(f'Found {str(len(items))} items.', end=' ')

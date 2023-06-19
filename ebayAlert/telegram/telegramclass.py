@@ -5,21 +5,15 @@ from ebayAlert.core.settings import settings
 from urllib.parse import urlencode
 
 
-def send_message(message):
-    send_text_url = settings.TELEGRAM_API_URL + message + ""
-    response = requests.get(send_text_url)
-    return response.json()['ok']
+def telegram_api_send(bottoken, chat_id):
+    return settings.TELEGRAM_API_SEND.format(bottoken=bottoken, chat_id=chat_id)
 
 
-def telegram_uri(bottoken, chat_id):
-    return settings.TELEGRAM_API_URL.format(bottoken=bottoken, chat_id=chat_id)
-
-
-class SendingClass:
+class TelegramClass:
 
     def send_message(self, message, chat_id):
         message_encoded = urlencode({"text": message})
-        sending_url = telegram_uri(configs.BOTTOKEN, chat_id) + message_encoded + ""
+        sending_url = telegram_api_send(configs.BOTTOKEN, chat_id) + message_encoded
         response = requests.get(sending_url)
 
         if response == 200:
@@ -31,4 +25,4 @@ class SendingClass:
         self.send_message(message + url, chat_id)
 
 
-telegram = SendingClass()
+telegram = TelegramClass()

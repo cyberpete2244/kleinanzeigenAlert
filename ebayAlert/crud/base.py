@@ -32,7 +32,7 @@ class CRUDBase:
 
     def get_all(self, db: Session) -> Optional[List[Model]]:
         results = db.execute(select(self.model).order_by(
-            self.model.price_low.desc(), self.model.price_target.desc()
+            self.model.search_type.asc(), self.model.price_low.desc(), self.model.price_target.desc()
                                                          )).scalars().all()
         return results
 

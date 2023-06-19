@@ -35,15 +35,17 @@ def cli() -> BaseCommand:
 @cli.command(options_metavar="<options>", help="Fetch new posts and send notifications.")
 @click.option("-s", "--silent", is_flag=True, help="Do not send notifications.")
 @click.option("-n", "--nonperm", is_flag=True, help="Do not edit database.")
+@click.option("-v", "--verbose", is_flag=True, help="Show more near matches.")
 @click.option("-e", "--exclusive", 'exclusive', metavar="<link id>", help="Run only one search by ID.")
 @click.option("-d", "--depth", 'depth', metavar="<pages n>", help="When available (on Kleinanzeigen), scan n pages of pagination (default 1).")
-def start(silent, nonperm, exclusive, depth):
+def start(silent, nonperm, exclusive, depth, verbose):
     """
     cli related to the main package. Fetch new posts and send notifications.
     """
     # DEFAULTS HERE
     write_database = True
     telegram_message = True
+    verbose_mode = False
     num_pages = 1
     exclusive_id = False
 
@@ -62,14 +64,17 @@ def start(silent, nonperm, exclusive, depth):
     if exclusive:
         print(">> Checking only ID:", exclusive)
         exclusive_id = int(exclusive)
+    if verbose:
+        print(">> Showing near misses also.")
+        verbose_mode = True
     with get_session() as db:
         get_all_post(db=db, exclusive_id=exclusive_id, write_database=write_database,
-                     telegram_message=telegram_message, num_pages=num_pages)
+                     telegram_message=telegram_message, num_pages=num_pages, verbose=verbose_mode)
     end = datetime.now()
     print("<< ebayAlert finished @", end.strftime("%H:%M:%S"), "Duration:", end - starttime)
 
 
-def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_message=False, num_pages=1):
+def get_all_post(db: Session, exclusive_id, write_database, telegram_message, num_pages, verbose):
     searches = crud_search.get_all(db=db)
     if searches:
         for link_model in searches:
@@ -134,11 +139,11 @@ def get_all_post(db: Session, exclusive_id=False, write_database=True, telegram_
                                     item.link = settings.EBAY_BASE_ITEM + str(item.post_id)
                                     message_items.append(item)
                             if enrich_count > 0:
-                                print(' Matched from Ebay:' + str(enrich_count), end=' ')
+                                print(' Matched from Ebay:' + str(enrich_count), end='')
 
                         # check for items worth sending and send
                         if len(message_items) > 0:
-                            filter_message_items(link_model, message_items, telegram_message=telegram_message)
+                            filter_message_items(link_model, message_items, telegram_message=telegram_message, verbose=verbose)
                         else:
                             print(' Nothing to report.')
                     else:
@@ -159,7 +164,7 @@ def calc_benefit(target) -> int:
     return round(target - target * configs.TARGET_MODE_BENEFIT)
 
 
-def filter_message_items(link_model, message_items, telegram_message):
+def filter_message_items(link_model, message_items, telegram_message, verbose):
     firstmessagesent = False
     for item in message_items:
         evaluationlog = ""
@@ -199,23 +204,19 @@ def filter_message_items(link_model, message_items, telegram_message):
             worth_messaging = False
             item.pricehint = ""
 
-            if item_price_num <= 1:
+            if item_price_num <= 1 and verbose:
                 # price is 0 or 1
                 item.pricehint = "[Offer]"
-                worth_messaging = False  # LESS MESSAGES
+                worth_messaging = True
                 evaluationlog += 'o'
             elif price_low <= item_price_num <= price_benefit:
                 item.pricehint = f'[DEAL]'
                 worth_messaging = True
                 evaluationlog += 'X'
-            elif price_benefit < item_price_num <= price_target and "VB" in item_price:
-                item.pricehint = "[Maybe]"
-                worth_messaging = False  # LESS MESSAGES
+            elif price_benefit < item_price_num <= price_target and "VB" in item_price and verbose:
+                item.pricehint = "[Bargain]"
+                worth_messaging = True
                 evaluationlog += 'b'
-            elif price_target < item_price_num <= price_target + 10 and "VB" in item_price:
-                item.pricehint = "[Nah]"
-                worth_messaging = False  # LESS MESSAGES
-                evaluationlog += 'n'
             item.pricehint += f"\n[{link_model.search_string}]"
 
             if type(link_model.price_info) != NoneType:
@@ -234,10 +235,11 @@ def filter_message_items(link_model, message_items, telegram_message):
         # METHOD 2
         if worth_messaging and type(link_model.price_high) != NoneType:
             # Mode: PRICERANGE
-            # maximal item price to be shown
+            # maximal item price to be shown (20% range)
             price_max = round(int(link_model.price_high) * 1.2)
             if (price_max - link_model.price_high) > 20:
                 price_max = link_model.price_high + 20
+            # INFO: lowest price to show in verbose is 30% below minimal price
 
             if int(link_model.price_low) <= item_price_num <= int(link_model.price_high):
                 pricediff = int(link_model.price_high) - int(link_model.price_low)
@@ -256,18 +258,18 @@ def filter_message_items(link_model, message_items, telegram_message):
             if item_price_num <= 1:
                 # price is 0 or 1
                 worth_messaging = True
-                evaluationlog += 'v'
+                evaluationlog += 'V'
             elif int(link_model.price_low) <= item_price_num <= int(link_model.price_high):
                 # price within range
                 worth_messaging = True
                 evaluationlog += 'X'
             elif int(link_model.price_high) < item_price_num <= price_max \
-                    and "VB" in item_price:
+                    and "VB" in item_price and verbose:
                 # price is negotiable and max 20% over watching price max 20€
                 item.pricehint = f"(+20%)"
                 worth_messaging = True
                 evaluationlog += 'h'
-            elif int(link_model.price_low) * 0.7 <= item_price_num < int(link_model.price_low):
+            elif int(link_model.price_low) * 0.7 <= item_price_num < int(link_model.price_low) and verbose:
                 # price is 30% below watch price
                 item.pricehint = f"(-30%)"
                 worth_messaging = True
@@ -315,7 +317,7 @@ def filter_message_items(link_model, message_items, telegram_message):
         if worth_messaging and telegram_message:
             dosend = worth_messaging
             if firstmessagesent is False:
-                print('  Messages:', end=' ')
+                print(' Messages:', end=' ')
                 firstmessagesent = True
 
             if checkzipcodes > 0 and item_inrange is True and item.shipping == "No Shipping":
@@ -333,7 +335,7 @@ def filter_message_items(link_model, message_items, telegram_message):
                 telegram.send_formated_message(item, chat_id)
 
     if firstmessagesent is False:
-        print('  Nothing worth messaging.', end='')
+        print(' Nothing worth messaging.', end='')
     print('')
 
 

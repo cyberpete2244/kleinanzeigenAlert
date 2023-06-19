@@ -47,10 +47,8 @@ Run regular cli command to initialise DB:
 
 Typically, this would be run as a cron job on an hourly basis.
 
-## Creating Searches (TODO)
-search types (Kleinanzeigen URLS) need to be defined in DB. They and are templates for arguments for Kleinanzeigen searches in a subdomain format. (e.g. "/s-spielzeug/anbieter:privat/anzeige:angebote/{NPAGE}{SEARCH_TERM}k0c23")
-* parameter in these templates is
-* {SEARCH_TERM}: This is the placeholder for pagination and an actual search string to narrow Kleinanzeigen searches 
+## Creating Searches (WIP)
+Currently this process is not supported by cli. WIP
 
 ## Requirements
 * A telegram bot API token and your personal conversation ID
@@ -70,10 +68,15 @@ search types (Kleinanzeigen URLS) need to be defined in DB. They and are templat
 ## ChangeLog
   1.2 (forked) -> 2.0
 * database rework
-* searches are created in database directly
-* items filtering by distance possible. Distance can be defined globally or per search.
+* searches are created in database directly (WIP)
+* items filtering by distance (if shipping not available) possible
+  * distance can be defined globally or per search
 * headers for scraper are generated randomly using ScrapeOPS API
-* searching Ebay is possible indirectly: matching of items to Kleinanzeigen searches is done on consequent executions
+* searching Ebay is possible indirectly
+  * matching Ebay items to Kleinanzeigen searches (main mode) is done on consequent executions
+* two search modes:
+  * A) items are searched within a price range
+  * B) items are matched below a target price (benefit margin adjustable in configs.py)
 
 ## Future Plans
 * add functionality to interact with script via telegram.
