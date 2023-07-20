@@ -1,7 +1,6 @@
 import requests
 
 from random import randint
-
 from ebayAlert.core.configs import configs
 
 

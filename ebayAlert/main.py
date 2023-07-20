@@ -230,7 +230,7 @@ def filter_message_items(link_model, message_items, telegram_message, verbose):
                 pricerange = f"T0: {price_target}€ ({price_target - item_price_num}€)\nWIN: {price_benefit}€ ({price_benefit - item_price_num}€)\n"
             item.pricerange = pricerange
             if type(item) == EbayPost:
-                item.print_price = f'{item.price}\n{item.pricerange}'
+                item.print_price = f'{item.price}\n[{link_model.search_string}]\n{item.pricerange}'
 
         # METHOD 2
         if worth_messaging and type(link_model.price_high) != NoneType:
