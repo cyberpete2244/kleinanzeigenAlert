@@ -16,7 +16,7 @@ from ebayAlert.crud.post import crud_klein, crud_ebay
 from ebayAlert.models.sqlmodel import EbayPost
 from ebayAlert.scrapping.ebay import EbayItemFactory
 from ebayAlert.scrapping.klein import KleinItemFactory
-from ebayAlert.telegram.telegramclass import telegram
+from ebayAlert.telegram.telegram import send_formatted_message
 
 log = create_logger(__name__)
 
@@ -332,7 +332,11 @@ def filter_message_items(link_model, message_items, telegram_message, verbose):
                 chat_id = configs.CHAT_ID
                 if type(link_model.chat_id) != NoneType:
                     chat_id = link_model.chat_id
-                telegram.send_formated_message(item, chat_id)
+
+                send_formatted_message(item, chat_id, False)
+
+                if type(item) == EbayPost and configs.BOTTOKEN_PRIO != "":
+                    send_formatted_message(item, chat_id, True)
 
     if firstmessagesent is False:
         print(' Nothing worth messaging.', end='')
