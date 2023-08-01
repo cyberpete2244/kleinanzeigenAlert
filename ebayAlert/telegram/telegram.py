@@ -18,4 +18,5 @@ def send_formatted_message(item, chat_id, priority):
         sending_url = telegram_api_send(configs.BOTTOKEN_PRIO, chat_id) + message_encoded
     else:
         sending_url = telegram_api_send(configs.BOTTOKEN, chat_id) + message_encoded
+
     requests.get(sending_url)
