@@ -20,7 +20,7 @@ class EbayItem(BaseItem):
 
     @property
     def title(self) -> str:
-        return self._find_text_in_class("s-item__title") or "No Title"
+        return self._find_text_in_class("s-item__title").removeprefix("Neues Angebot") or "No Title"
 
     @property
     def price(self) -> str:
@@ -37,7 +37,7 @@ class EbayItem(BaseItem):
     @property
     def id(self) -> int:
         url = self.contents.a.get('href')
-        return int(url[url.rindex("/")+1:url.index("?")]) or 0
+        return int(url[url.rindex("/") + 1:url.index("?")]) or 0
 
     @property
     def location(self):
