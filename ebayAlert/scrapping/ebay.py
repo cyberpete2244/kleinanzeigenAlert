@@ -20,7 +20,11 @@ class EbayItem(BaseItem):
 
     @property
     def title(self) -> str:
-        return self._find_text_in_class("s-item__title").removeprefix("Neues Angebot") or "No Title"
+        title = self._find_text_in_class("s-item__title")
+        prefix = "Neues Angebot"
+        if title.startswith(prefix):
+            return title[len(prefix):]
+        return title or "No Title"
 
     @property
     def price(self) -> str:

@@ -13,8 +13,8 @@ log = create_logger(__name__)
 class KleinItem(BaseItem):
     @property
     def link(self) -> str:
-        if self.contents.a.get('href'):
-            return settings.KLEIN_URL_BASE + self.contents.a.get('href')
+        if self.contents.get('data-href'):
+            return settings.KLEIN_URL_BASE + self.contents.get('data-href')
         else:
             return "No url found."
 
@@ -32,6 +32,7 @@ class KleinItem(BaseItem):
 
     @property
     def description(self) -> str:
+        # not in use currently
         description = self._find_text_in_class("aditem-main--middle--description")
         if description:
             return description.replace("\n", " ")
@@ -55,7 +56,8 @@ class KleinItemFactory(ItemFactory):
             web_page_soup = self.get_webpage(self.generate_url(link_model, npage))
             if web_page_soup:
                 articles = self.extract_item_from_page(web_page_soup)
-                self.item_list += [KleinItem(article) for article in articles]
+                for article in articles:
+                    self.item_list.append(KleinItem(article))
                 npage_found = len(web_page_soup.find(attrs={"class": "pagination-pages"}).find_all())
                 if npage < npage_found and npage <= npage_max:
                     npage += 1
@@ -79,13 +81,12 @@ class KleinItemFactory(ItemFactory):
             search_term = "-".join(str(y) for y in search_term_parts) + "/"
         # currently price is not considered in getting the results, articles are filtered later
         url = settings.KLEIN_URL_BASE + link_model.url.format(PAGENSEARCH=current_page+search_term)
-        # print(url)
         return url
 
     @staticmethod
     def extract_item_from_page(soup: BeautifulSoup) -> Generator:
         result = soup.find(attrs={"id": "srchrslt-adtable"})
         if result:
-            for item in result.find_all(attrs={"class": "ad-listitem lazyload-item"}):
+            for item in result.find_all(attrs={"class": "ad-listitem"}):
                 if item.article:
                     yield item.article

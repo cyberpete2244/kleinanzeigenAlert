@@ -34,6 +34,13 @@ class BaseItem:
         if found:
             return found.text.strip()
 
+    def _find_text_in_child_of_class(self, class_name: str):
+        found = self.contents.find(attrs={"class": f"{class_name}"})
+        if found:
+            found = found.contents[0]
+            if found:
+                return found.text.strip()
+
 
 class ItemFactory:
     @staticmethod
