@@ -122,13 +122,10 @@ def get_all_post(db: Session, exclusive_id, write_database, telegram_message, nu
                                 item_matching = True
                                 item_title = item.title.lower()
                                 search_terms = link_model.search_string.split(" ")
-                                for term in search_terms:
-                                    if not term.startswith("-"):
-                                        if item_title.find(term) == -1:
-                                            item_matching = False
-                                    elif term.startswith("-"):
-                                        if item_title.find(term) > -1:
-                                            item_matching = False
+
+                                if not match_title(item_title, search_terms):
+                                    item_matching = False
+
                                 if item_matching:
                                     enrich_count += 1
                                     # update link_id for ebay item if matched
@@ -162,6 +159,34 @@ def get_all_post(db: Session, exclusive_id, write_database, telegram_message, nu
 
 def calc_benefit(target) -> int:
     return round(target - target * configs.TARGET_MODE_BENEFIT)
+
+
+def match_title(item_title, search_terms):
+    title_matching = True
+    for term in search_terms:
+        if not term.startswith("-"):
+            # positive search terms
+            if not match_title_cases(item_title, term):
+                title_matching = False
+        elif term.startswith("-"):
+            # negative search terms
+            term = term[1:]
+            if match_title_cases(item_title, term):
+                title_matching = False
+    if title_matching:
+        print(f"MATCH: [{search_terms}] in '{item_title}'")
+
+    return title_matching
+
+
+def match_title_cases(item_title, term):
+    if term.isdigit():
+        return item_title.find(term) > -1
+    if re.search(r"\b" + re.escape(term) + r"\b", item_title):
+        return True
+    if re.search(r"\d" + re.escape(term) + r"\b", item_title):
+        return True
+    return False
 
 
 def filter_message_items(link_model, message_items, telegram_message, verbose):
