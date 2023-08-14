@@ -163,6 +163,7 @@ def calc_benefit(target) -> int:
 
 def match_title(item_title, search_terms):
     title_matching = True
+
     for term in search_terms:
         if not term.startswith("-"):
             # positive search terms
@@ -173,8 +174,6 @@ def match_title(item_title, search_terms):
             term = term[1:]
             if match_title_cases(item_title, term):
                 title_matching = False
-    if title_matching:
-        print(f"MATCH: [{search_terms}] in '{item_title}'")
 
     return title_matching
 
