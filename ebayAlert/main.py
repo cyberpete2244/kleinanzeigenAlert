@@ -301,65 +301,86 @@ def filter_message_items(link_model, message_items, telegram_message, verbose):
             pricerange = " [" + pricerange + "] "
             item.pricerange = f"{link_model.price_low}€{pricerange}{link_model.price_high}€"
 
-        # calculate and check distances
-        checkzipcodes = 0
+        # should you calculate and check distances ?
+        do_geoloc = False
+        geoloc_areas = ""
         while True:
             if type(link_model.zipcodes) != NoneType:
-                # DB setting takes priority
-                checkzipcodes = 1
+                # DB setting takes priority: allows per search setting
+                do_geoloc = True
+                geoloc_areas = link_model.zipcodes.split('-')
                 break
             if configs.LOCATION_FILTER != "":
-                checkzipcodes = 2
+                # Setting in config file is general filtering
+                do_geoloc = True
+                geoloc_areas = configs.LOCATION_FILTER.split('-')
                 break
             break
+
+        force_prio_geoloc = True if configs.FORCE_PRIO_GEOLOC == "1" else False
+        item_noshipping = True if item.shipping == "No Shipping" else False
+
+        # calculate distance
         item_inrange = False
-        if checkzipcodes > 0 and worth_messaging and item.shipping == "No Shipping":
+        if worth_messaging and ((do_geoloc and item_noshipping) or force_prio_geoloc):
             evaluationlog += '?'
             # ZIPCODES in DB like this: dist1,zip11,zip12,..,zip1N-dist2,zip21..
             geocoder = Nominatim(user_agent="cyberpete2244/kleinanzeigenAlert")
             geoloc_item = geocoder.geocode(re.findall(r'\d+', item.location))
             # cycle through areas and through zipcodes
-            areas = link_model.zipcodes.split('-') if checkzipcodes == 1 else configs.LOCATION_FILTER.split('-')
             t = 0
-            while t < len(areas):
-                zipcodes = areas[t].split(',')
-                max_distance = int(zipcodes[0])
+            while t < len(geoloc_areas) and not item_inrange:
+                distancegroup = geoloc_areas[t].split(',')
+                max_distance = int(distancegroup[0])
                 n = 1
-                while n < len(zipcodes):
-                    geoloc_filter = geocoder.geocode(zipcodes[n])
+                while n < len(distancegroup) and not item_inrange:
+                    geoloc_filter = geocoder.geocode(distancegroup[n])
                     itemdistance = round(distance.distance((geoloc_item.latitude, geoloc_item.longitude),
                                                            (geoloc_filter.latitude, geoloc_filter.longitude)).km)
                     if itemdistance <= max_distance:
                         item_inrange = True
-                        n = len(zipcodes)
-                        t = len(areas)
+                        n = len(distancegroup)
+                        t = len(geoloc_areas)
                     else:
                         n += 1
                 t += 1
+            if item_inrange:
+                evaluationlog += '+'
+            elif not item_inrange:
+                evaluationlog += '-'
+
+        # still worth_messaging?
+        if item_noshipping and do_geoloc and not item_inrange:
+            worth_messaging = False
 
         # send telegram message?
         if worth_messaging and telegram_message:
-            dosend = worth_messaging
             if firstmessagesent is False:
                 print(' Messages:', end=' ')
                 firstmessagesent = True
 
-            if checkzipcodes > 0 and item_inrange is True and item.shipping == "No Shipping":
-                evaluationlog += '+'
-            elif checkzipcodes > 0 and item_inrange is False and item.shipping == "No Shipping":
-                evaluationlog += '-'
-                dosend = False
-
             print(evaluationlog, end='')
 
-            if dosend:
-                chat_id = configs.CHAT_ID
-                if type(link_model.chat_id) != NoneType:
-                    chat_id = link_model.chat_id
+            # if this search has specified target chat, override here
+            chat_id = configs.CHAT_ID
+            if type(link_model.chat_id) is not NoneType:
+                chat_id = link_model.chat_id
 
-                send_formatted_message(item, chat_id, False)
+            send_formatted_message(item, chat_id, False)
 
-                if type(item) == EbayPost and configs.BOTTOKEN_PRIO != "":
+            # is a priority chat available?
+            if configs.BOTTOKEN_PRIO != "":
+                priority_send = False
+                while True:
+                    if type(item) is EbayPost:
+                        priority_send = True
+                        break
+                    if force_prio_geoloc and item_inrange:
+                        priority_send = True
+                        break
+                    break
+
+                if priority_send:
                     send_formatted_message(item, chat_id, True)
 
     if firstmessagesent is False:
