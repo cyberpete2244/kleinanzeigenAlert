@@ -161,6 +161,10 @@ def calc_benefit(target) -> int:
     return round(target - target * configs.TARGET_MODE_BENEFIT)
 
 
+def benefit_printable() -> str:
+    return f"{configs.TARGET_MODE_BENEFIT * 100}%"
+
+
 def match_title(item_title, search_terms):
     title_matching = True
 
@@ -237,10 +241,10 @@ def filter_message_items(link_model, message_items, telegram_message, verbose):
                 item.pricehint = f'[DEAL]'
                 worth_messaging = True
                 evaluationlog += 'X'
-            elif price_benefit < item_price_num <= price_target and "VB" in item_price and verbose:
-                item.pricehint = "[Bargain]"
+            elif price_benefit < item_price_num <= price_target and "VB" in item_price:
+                item.pricehint = "[MAYBE]"
                 worth_messaging = True
-                evaluationlog += 'b'
+                evaluationlog += 'm'
             item.pricehint += f"\n[{link_model.search_string}]"
 
             if type(link_model.price_info) != NoneType:
@@ -248,10 +252,10 @@ def filter_message_items(link_model, message_items, telegram_message, verbose):
                 for info in infos:
                     pair = info.split(':')
                     target = int(pair[1])
-                    benefit = calc_benefit(target)
-                    pricerange += f"T0 {pair[0]}: {target}€ ({target - item_price_num}€) WIN: {benefit}€ ({benefit - item_price_num}€)\n"
+                    benefit_goal = calc_benefit(target)
+                    pricerange += f"T0 {pair[0]}: {target}€ ({target - item_price_num}€) WIN({benefit_printable()}): {benefit_goal}€ -> {benefit_goal - item_price_num}€ ({round(((target - item_price_num)*100)/target)}%)\n"
             else:
-                pricerange = f"T0: {price_target}€ ({price_target - item_price_num}€)\nWIN: {price_benefit}€ ({price_benefit - item_price_num}€)\n"
+                pricerange = f"T0: {price_target}€ ({price_target - item_price_num}€)\nWIN({benefit_printable()}): {price_benefit}€ -> {price_benefit - item_price_num}€ ({round(((price_target - item_price_num)*100)/price_target)}%)\n"
             item.pricerange = pricerange
             if type(item) == EbayPost:
                 item.print_price = f'{item.price}\n[{link_model.search_string}]\n{item.pricerange}'
