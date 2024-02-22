@@ -241,7 +241,7 @@ def filter_message_items(link_model, message_items, telegram_message, verbose):
                 item.pricehint = f'[DEAL]'
                 worth_messaging = True
                 evaluationlog += 'X'
-            elif price_benefit < item_price_num <= price_target and "VB" in item_price:
+            elif price_benefit < item_price_num <= price_target and "VB" in item_price and verbose:
                 item.pricehint = "[MAYBE]"
                 worth_messaging = True
                 evaluationlog += 'm'
