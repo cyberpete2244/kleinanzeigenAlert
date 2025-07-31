@@ -46,7 +46,7 @@ class ItemFactory:
     @staticmethod
     def get_webpage(url: str) -> BeautifulSoup:
         response = requests.get(url, headers=get_random_header(header_list))
-        print(f"<< target url: {url}")
+        # print(f"<< target url: {url}")
         if response and response.status_code == 200:
             cleaned_response = response.text.replace("&#8203", "")
             soup = BeautifulSoup(cleaned_response, "html.parser")

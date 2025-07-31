@@ -18,5 +18,16 @@ def send_formatted_message(item, chat_id, priority):
         sending_url = telegram_api_send(configs.BOTTOKEN_PRIO, chat_id) + message_encoded
     else:
         sending_url = telegram_api_send(configs.BOTTOKEN, chat_id) + message_encoded
+    requests.get(sending_url)
 
+
+def send_test_message(chat_id, priority):
+    message = "Hello World (" + str(priority) + ")"
+    message_encoded = urlencode({"text": message})
+    sending_url = ""
+    if priority:
+        sending_url = telegram_api_send(configs.BOTTOKEN_PRIO, chat_id) + message_encoded
+    else:
+        sending_url = telegram_api_send(configs.BOTTOKEN, chat_id) + message_encoded
+    print(f"<< telegram url: {sending_url}")
     requests.get(sending_url)

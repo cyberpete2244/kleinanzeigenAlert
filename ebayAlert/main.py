@@ -17,6 +17,7 @@ from ebayAlert.models.sqlmodel import EbayPost
 from ebayAlert.scrapping.ebay import EbayItemFactory
 from ebayAlert.scrapping.klein import KleinItemFactory
 from ebayAlert.telegram.telegram import send_formatted_message
+from ebayAlert.telegram.telegram import send_test_message
 
 log = create_logger(__name__)
 
@@ -34,17 +35,19 @@ def cli() -> BaseCommand:
 
 @cli.command(options_metavar="<options>", help="Fetch new posts and send notifications.")
 @click.option("-s", "--silent", is_flag=True, help="Do not send notifications.")
+@click.option("-t", "--testtelegram", is_flag=True, help="Send test message via Telegram.")
 @click.option("-n", "--nonperm", is_flag=True, help="Do not edit database.")
 @click.option("-v", "--verbose", is_flag=True, help="Show more near matches.")
 @click.option("-e", "--exclusive", 'exclusive', metavar="<link id>", help="Run only one search by ID.")
 @click.option("-d", "--depth", 'depth', metavar="<pages n>", help="When available (on Kleinanzeigen), scan n pages of pagination (default 1).")
-def start(silent, nonperm, exclusive, depth, verbose):
+def start(silent, testtelegram, nonperm, exclusive, depth, verbose):
     """
     cli related to the main package. Fetch new posts and send notifications.
     """
     # DEFAULTS HERE
     write_database = True
-    telegram_message = True
+    test_telegram = False
+    send_message = True
     verbose_mode = False
     num_pages = 1
     exclusive_id = False
@@ -54,7 +57,7 @@ def start(silent, nonperm, exclusive, depth, verbose):
     print(">> Starting ebayAlert @", starttime.strftime("%H:%M:%S"))
     if silent:
         print(">> No notifications.")
-        telegram_message = False
+        send_message = False
     if nonperm:
         print(">> No changes to database.")
         write_database = False
@@ -67,14 +70,22 @@ def start(silent, nonperm, exclusive, depth, verbose):
     if verbose:
         print(">> Showing near misses also.")
         verbose_mode = True
-    with get_session() as db:
-        get_all_post(db=db, exclusive_id=exclusive_id, write_database=write_database,
-                     telegram_message=telegram_message, num_pages=num_pages, verbose=verbose_mode)
+    if testtelegram:
+        print(">> Just testing Telegram messaging.")
+        test_telegram = True
+    if not test_telegram:
+        with get_session() as db:
+            get_all_post(db=db, exclusive_id=exclusive_id, write_database=write_database,
+                         send_message=send_message, num_pages=num_pages, verbose=verbose_mode)
+    else:
+        chat_id = configs.CHAT_ID
+        send_test_message(chat_id, False)
+        send_test_message(chat_id, True)
     end = datetime.now()
     print("<< ebayAlert finished @", end.strftime("%H:%M:%S"), "Duration:", end - starttime)
 
 
-def get_all_post(db: Session, exclusive_id, write_database, telegram_message, num_pages, verbose):
+def get_all_post(db: Session, exclusive_id, write_database, send_message, num_pages, verbose):
     searches = crud_search.get_all(db=db)
     if searches:
         for link_model in searches:
@@ -140,7 +151,7 @@ def get_all_post(db: Session, exclusive_id, write_database, telegram_message, nu
 
                         # check for items worth sending and send
                         if len(message_items) > 0:
-                            filter_message_items(link_model, message_items, telegram_message=telegram_message, verbose=verbose)
+                            filter_message_items(link_model, message_items, send_message=send_message, verbose=verbose)
                         else:
                             print(' Nothing to report.')
                     else:
@@ -192,7 +203,7 @@ def match_title_cases(item_title, term):
     return False
 
 
-def filter_message_items(link_model, message_items, telegram_message, verbose):
+def filter_message_items(link_model, message_items, send_message, verbose):
     firstmessagesent = False
     for item in message_items:
         evaluationlog = ""
@@ -358,8 +369,8 @@ def filter_message_items(link_model, message_items, telegram_message, verbose):
             worth_messaging = False
 
         # send telegram message?
-        if worth_messaging and telegram_message:
-            if firstmessagesent is False:
+        if worth_messaging and send_message:
+            if not firstmessagesent:
                 print(' Messages:', end=' ')
                 firstmessagesent = True
 
@@ -370,11 +381,9 @@ def filter_message_items(link_model, message_items, telegram_message, verbose):
             if type(link_model.chat_id) is not NoneType:
                 chat_id = link_model.chat_id
 
-            send_formatted_message(item, chat_id, False)
-
-            # is a priority chat available?
+            # is a priority chat available and is message high priority?
+            priority_send = False
             if configs.BOTTOKEN_PRIO != "":
-                priority_send = False
                 while True:
                     if type(item) is EbayPost:
                         priority_send = True
@@ -384,10 +393,9 @@ def filter_message_items(link_model, message_items, telegram_message, verbose):
                         break
                     break
 
-                if priority_send:
-                    send_formatted_message(item, chat_id, True)
+            send_formatted_message(item, chat_id, priority_send)
 
-    if firstmessagesent is False:
+    if not firstmessagesent:
         print(' Nothing worth messaging.', end='')
     print('')
 

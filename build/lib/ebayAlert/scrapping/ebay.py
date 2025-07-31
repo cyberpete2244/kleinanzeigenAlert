@@ -2,7 +2,7 @@ from typing import Generator
 from bs4 import BeautifulSoup
 
 from ebayAlert.core.settings import settings
-from ebayAlert.scrapping.items import BaseItem, ItemFactory
+from ebayAlert.scrapping.item import BaseItem, ItemFactory
 from ebayAlert import create_logger
 
 log = create_logger(__name__)
