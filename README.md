@@ -25,16 +25,18 @@ No API required - Only URL of the query.
    1. Open the chat with [@RawDataBot](https://t.me/RawDataBot)
    2. Enter `/start`
    3. Copy the message ID. Either from `message/from/id` or `message/chat/id`. The message ID looks like `417417807`.
-5. Set environment variables TOKEN and CHAT_ID. Or hard code your token & message ID in `ebAlert/core/config.py`.
+5. Set environment variables like BOTTOKEN and CHAT_ID and so on in `ebAlert/core/config.py`. Use `ebAlert/core/config.defaults.py` to create this file.
 6. Start a conversation with the bot from your Telegram App, otherwise the Telegram Bot cannot contact you.
-7. Install the dependencies
+7. Create virtaul environment for application and install it
    ```sh
-   pip install .
+   python3 -m venv venv
+   venv/bin/pip install .
    ```
 8. Run the `ebayAlert` CLI
    ```sh
-   python3 -m ebayAlert
+   venv/bin/python3 -m ebayAlert start
    ```
+9. The first run will initiate a SQLite database. Now you will need to create search tasks. Currently possible in database only.
 
 ## Usage & Example
 I removed the ability to add searches using CLI, might add it back later. Currently one need to set up searches using SQL queries directly in DB or by using any third party SQL manager (e.g. SQLite3). 
