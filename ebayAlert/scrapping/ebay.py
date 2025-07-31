@@ -2,7 +2,7 @@ from typing import Generator
 from bs4 import BeautifulSoup
 
 from ebayAlert.core.settings import settings
-from ebayAlert.scrapping.items import BaseItem, ItemFactory
+from ebayAlert.scrapping.item import BaseItem, ItemFactory
 from ebayAlert import create_logger
 
 log = create_logger(__name__)
@@ -20,7 +20,7 @@ class EbayItem(BaseItem):
 
     @property
     def title(self) -> str:
-        title = self._find_text_in_class("s-item__title")
+        title = self._find_text_in_class("bsig__title__text")
         prefix = "Neues Angebot"
         if title.startswith(prefix):
             return title[len(prefix):]
@@ -29,7 +29,7 @@ class EbayItem(BaseItem):
     @property
     def price(self) -> str:
         # strip EUR and add € at end
-        price = self._find_text_in_class("s-item__price") or 0
+        price = self._find_text_in_class("bsig__price") or 0
         if price != 0:
             price = price[4:price.index(',')]
         return f'{price} €'
@@ -58,8 +58,8 @@ class EbayItemFactory(ItemFactory):
 
     @staticmethod
     def extract_item_from_page(soup: BeautifulSoup) -> Generator:
-        result = soup.find(attrs={"class": "b-list__items_nofooter"})
+        result = soup.find(attrs={"class": "brwrvr__item-results--list"})
         if result:
-            for item in result.find_all(attrs={"class": "s-item s-item--large"}):
+            for item in result.find_all(attrs={"class": "brwrvr__item-card__body"}):
                 if item:
                     yield item

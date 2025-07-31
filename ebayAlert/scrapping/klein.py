@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from random import randint
 from time import sleep
 
-from ebayAlert.scrapping.items import BaseItem, ItemFactory
+from ebayAlert.scrapping.item import BaseItem, ItemFactory
 from ebayAlert import create_logger
 from ebayAlert.core.settings import settings
 
