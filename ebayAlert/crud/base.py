@@ -5,7 +5,7 @@ from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
 from ebayAlert import create_logger
-from ebayAlert.db.db import Session as Session_DB
+from ebayAlert.db.db import Session_klein
 from ebayAlert.models.sqlmodel import Base, Search, SearchType
 
 log = create_logger(__name__)
@@ -15,15 +15,16 @@ Model = TypeVar("Model", bound=Base)
 
 @contextmanager
 def get_session():
-    session = Session_DB()
+    session = Session_klein()
     try:
         yield session
-        session.commit()
     except Exception as e:
         session.rollback()
         log.error(e)
-    finally:
-        session.close()
+    else:
+        session.commit()
+    # finally:
+    #     session.close()
 
 
 class CRUDBase:

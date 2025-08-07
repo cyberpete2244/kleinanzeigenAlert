@@ -12,4 +12,4 @@ engine = create_engine(f'sqlite:///{configs.FILE_LOCATION}', echo=False)
 
 Base = declarative_base()
 
-Session = sessionmaker(bind=engine)
+Session_klein = sessionmaker(bind=engine)
