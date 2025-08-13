@@ -85,8 +85,10 @@ class KleinItemFactory(ItemFactory):
 
     @staticmethod
     def extract_item_from_page(soup: BeautifulSoup) -> Generator:
-        result = soup.find(attrs={"id": "srchrslt-adtable"})
+        result = soup.find('ul', id="srchrslt-adtable")
         if result:
-            for item in result.find_all(attrs={"class": "ad-listitem"}):
-                if item.article:
-                    yield item.article
+            articles = result.find_all('li', class_="ad-listitem")
+            if articles:
+                for item in articles:
+                    if item.article:
+                        yield item.article
