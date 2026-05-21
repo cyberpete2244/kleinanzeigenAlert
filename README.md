@@ -25,7 +25,16 @@ No API required - Only URL of the query.
    1. Open the chat with [@RawDataBot](https://t.me/RawDataBot)
    2. Enter `/start`
    3. Copy the message ID. Either from `message/from/id` or `message/chat/id`. The message ID looks like `417417807`.
-5. Set environment variables like BOTTOKEN and CHAT_ID and so on in `ebAlert/core/config.py`. Use `ebAlert/core/config.defaults.py` to create this file.
+5. Copy the example environment file and configure your settings:
+   ```sh
+   cp .env.example .env
+   ```
+   Edit `.env` with your actual values:
+   - BOTTOKEN: Your Telegram bot token
+   - BOTTOKEN_PRIO: Your priority Telegram bot token (optional)
+   - CHAT_ID: Your Telegram chat ID
+   - SCRAPEOPS_API_KEY: Your ScrapeOps API key
+   - Other optional settings as documented in the file
 6. Start a conversation with the bot from your Telegram App, otherwise the Telegram Bot cannot contact you.
 7. Create virtaul environment for application and install it
    ```sh
